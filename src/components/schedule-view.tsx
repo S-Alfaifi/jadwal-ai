@@ -95,9 +95,9 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
             </div>
             
              {/* Time Headers */}
-            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(6rem, 1fr))`}}>
+            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(4.5rem, 1fr))`}}>
                  {timeSlots.map((time) => (
-                    <div key={time} className="text-center p-2 text-xs font-medium text-muted-foreground border-r border-b" >
+                    <div key={time} className="text-center p-2 text-[10px] md:text-xs font-medium text-muted-foreground border-r border-b" >
                         {time.endsWith('00') ? time : ''}
                     </div>
                 ))}

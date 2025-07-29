@@ -124,7 +124,7 @@ export function AddCourseForm({ onSubmit, course }: AddCourseFormProps) {
         {errors.sections?.[sectionIndex]?.[type]?.days && <p className="text-sm text-destructive">{errors.sections?.[sectionIndex]?.[type]?.days?.message}</p>}
       </div>
       
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor={`sections.${sectionIndex}.${type}.startTime`}>Start Time</Label>
           <Input type="time" {...register(`sections.${sectionIndex}.${type}.startTime`)} />
