@@ -29,7 +29,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
         return `${String(hour).padStart(2, '0')}:${minute}`;
     });
 
-    const positionedEvents = useMemo(() => {
+    const { positionedEvents, dayTrackCounts } = useMemo(() => {
         const allEvents: Omit<PositionedEvent, 'track'>[] = [];
         scheduledItems.forEach(({ course, section }) => {
             const processTime = (type: 'Lecture' | 'Lab', time: SectionTime | undefined) => {
@@ -73,13 +73,9 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
             }
         });
 
-        return finalEvents;
-    }, [scheduledItems]);
-    
-    const dayTrackCounts = useMemo(() => {
         const counts: Record<string, number> = {};
         ALL_DAYS.forEach(day => {
-            const eventsOnDay = positionedEvents.filter(e => e.day === day);
+            const eventsOnDay = finalEvents.filter(e => e.day === day);
             if(eventsOnDay.length === 0) {
                  counts[day] = 1;
                  return;
@@ -87,15 +83,18 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
             const maxTrack = Math.max(0, ...eventsOnDay.map(e => e.track));
             counts[day] = maxTrack + 1;
         });
-        return counts;
-    }, [positionedEvents]);
 
+        return { positionedEvents: finalEvents, dayTrackCounts: counts };
+    }, [scheduledItems]);
+    
     return (
         <div className="grid grid-cols-[auto_1fr] bg-background font-sans">
-            <div className="sticky left-0 top-0 z-30 flex items-center justify-center bg-card border-r p-2">
+            {/* Top-left corner */}
+            <div className="sticky left-0 top-0 z-30 flex items-center justify-center bg-card border-r p-2 border-b">
                 <div className="text-xs font-medium text-muted-foreground">Time</div>
             </div>
             
+             {/* Time Headers */}
             <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(6rem, 1fr))`}}>
                  {timeSlots.map((time) => (
                     <div key={time} className="text-center p-2 text-xs font-medium text-muted-foreground border-r border-b" >
@@ -104,6 +103,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                 ))}
             </div>
 
+             {/* Day Headers */}
             <div className="sticky left-0 z-20 flex flex-col">
                 {ALL_DAYS.map((day) => (
                     <div key={day} className="flex-grow flex items-center justify-center p-2 font-bold text-primary-foreground bg-card border-b border-r" style={{minHeight: `${dayTrackCounts[day] * 80}px`}}>
@@ -112,49 +112,52 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                 ))}
             </div>
 
-            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(6rem, 1fr))`}}>
-                {ALL_DAYS.map((day, dayIndex) => (
-                    positionedEvents.filter(e => e.day === day).map((item, eventIndex) => {
-                        const startCol = ((item.startMinutes - startHour * 60) / 30);
-                        const durationCols = (item.endMinutes - item.startMinutes) / 30;
-                        
-                        const dayRowStart = ALL_DAYS.slice(0, dayIndex).reduce((acc, d) => acc + dayTrackCounts[d], 0) + 1;
-                        const rowStart = dayRowStart + item.track;
-
-                        return (
-                            <div
-                                key={`${item.course.id}-${item.section.id}-${item.day}-${item.type}-${eventIndex}`}
-                                className="rounded-lg p-2 flex flex-col justify-center relative overflow-hidden text-black m-1 shadow-md"
-                                style={{
-                                    gridRow: `${rowStart} / span 1`,
-                                    gridColumn: `${startCol + 1} / span ${durationCols}`,
-                                    backgroundColor: item.course.color,
-                                    zIndex: 10,
-                                    minHeight: '72px'
-                                }}
-                                 title={`${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`}>
-                                <div>
-                                    <p className="font-bold text-sm text-black/80 truncate">{item.course.name}</p>
-                                    <p className="text-xs text-black/70 truncate">{item.section.name} ({item.type})</p>
-                                </div>
-                                <div className="text-xs text-black/60 font-mono mt-1">
-                                    {item.time.startTime} - {item.time.endTime}
-                                </div>
-                            </div>
-                        );
-                    })
-                ))}
-                 {ALL_DAYS.map((day, dayIndex) => {
+            {/* Schedule Grid Area */}
+            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, 1fr)`, gridTemplateRows: `repeat(${Object.values(dayTrackCounts).reduce((a,b) => a+b, 0)}, 80px)`}}>
+                {/* Background Grid Cells */}
+                {ALL_DAYS.map((day, dayIndex) => {
                     const dayRowStart = ALL_DAYS.slice(0, dayIndex).reduce((acc, d) => acc + dayTrackCounts[d], 0) + 1;
                     return Array.from({length: dayTrackCounts[day]}).map((_, trackIndex) => (
                         Array.from({length: timeSlots.length}).map((_, timeIndex) => (
                             <div key={`${day}-${trackIndex}-${timeIndex}`} className="border-r border-b" style={{
                                 gridRow: dayRowStart + trackIndex,
-                                gridColumn: timeIndex + 1
+                                gridColumn: timeIndex + 1,
+                                minHeight: '80px',
                             }}/>
                         ))
                     ))
                  })}
+
+                {/* Positioned Event Items */}
+                {positionedEvents.map((item, eventIndex) => {
+                    const startCol = ((item.startMinutes - startHour * 60) / 30);
+                    const durationCols = (item.endMinutes - item.startMinutes) / 30;
+                    
+                    const dayRowStart = ALL_DAYS.slice(0, ALL_DAYS.indexOf(item.day)).reduce((acc, d) => acc + dayTrackCounts[d], 0) + 1;
+                    const rowStart = dayRowStart + item.track;
+
+                    return (
+                        <div
+                            key={`${item.course.id}-${item.section.id}-${item.day}-${item.type}-${eventIndex}`}
+                            className="rounded-lg p-2 flex flex-col justify-center relative overflow-hidden text-black m-1 shadow-md"
+                            style={{
+                                gridRow: `${rowStart} / span 1`,
+                                gridColumn: `${startCol + 1} / span ${durationCols}`,
+                                backgroundColor: item.course.color,
+                                zIndex: 10,
+                                minHeight: '72px'
+                            }}
+                             title={`${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`}>
+                            <div>
+                                <p className="font-bold text-sm text-black/80 truncate">{item.course.name}</p>
+                                <p className="text-xs text-black/70 truncate">{item.section.name} ({item.type})</p>
+                            </div>
+                            <div className="text-xs text-black/60 font-mono mt-1">
+                                {item.time.startTime} - {item.time.endTime}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
