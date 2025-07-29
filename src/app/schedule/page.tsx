@@ -23,7 +23,6 @@ export default function SchedulePage() {
   const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [excludedCourses, setExcludedCourses] = useState<Course[]>([]);
-  const [includedCourses, setIncludedCourses] = useState<Course[]>([]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -39,48 +38,51 @@ export default function SchedulePage() {
     setCurrentScheduleIndex(0);
     setAiSuggestions(null);
     setExcludedCourses([]);
-    setIncludedCourses(courses);
     
     setTimeout(async () => {
       // Attempt to generate with all courses first
-      let bestSchedules = generateSchedules(courses, lockedSections);
+      let generatedSchedules = generateSchedules(courses, lockedSections);
       let finalIncludedCourses = courses;
 
       // If no schedule with all courses, try removing one at a time
-      if (bestSchedules.length === 0 && courses.length > 1) {
-        let maxCoursesScheduled = 0;
+      if (generatedSchedules.length === 0 && courses.length > 1) {
         let bestPartials: Schedule[] = [];
-        let bestIncluded: Course[] = [];
-
+        let maxCoursesScheduled = 0;
+        
+        // Find the maximum number of courses we can schedule together
         for (let i = 0; i < courses.length; i++) {
-          const coursesToTry = courses.filter((c) => c.id !== courses[i].id);
+          const coursesToTry = courses.filter((_, index) => index !== i);
           if (coursesToTry.length < maxCoursesScheduled) continue;
-
+          
           const partialSchedules = generateSchedules(coursesToTry, lockedSections);
-
           if (partialSchedules.length > 0) {
-             if (coursesToTry.length > maxCoursesScheduled) {
-                maxCoursesScheduled = coursesToTry.length;
-                bestPartials = partialSchedules;
-                bestIncluded = coursesToTry;
-             } else if (coursesToTry.length === maxCoursesScheduled) {
-                // This is a different combination of courses with the same number of courses,
-                // so we should consider these schedules as well.
-                bestPartials.push(...partialSchedules);
-             }
+            if (coursesToTry.length > maxCoursesScheduled) {
+              maxCoursesScheduled = coursesToTry.length;
+            }
           }
         }
-        bestSchedules = bestPartials;
-        finalIncludedCourses = bestIncluded;
+        
+        // If we found a viable number of courses to schedule, collect all schedules of that size
+        if (maxCoursesScheduled > 0) {
+            for (let i = 0; i < courses.length; i++) {
+                 const coursesToTry = courses.filter((_, index) => index !== i);
+                 if (coursesToTry.length === maxCoursesScheduled) {
+                     const partialSchedules = generateSchedules(coursesToTry, lockedSections);
+                     bestPartials.push(...partialSchedules);
+                 }
+            }
+            // Also consider combinations of N-2, N-3 etc. if the primary N-1 fails.
+            // This logic is simplified to just N-1 for now, but could be expanded.
+        }
+
+        if (bestPartials.length > 0) {
+            generatedSchedules = bestPartials;
+            // The included/excluded courses will vary per schedule, so we handle this in the render logic.
+        }
       }
       
-      const excluded = courses.filter(c => !finalIncludedCourses.some(ic => ic.id === c.id));
-      setExcludedCourses(excluded);
-      setIncludedCourses(finalIncludedCourses);
-
-
-      if (bestSchedules.length > 0) {
-        setSchedules(bestSchedules);
+      if (generatedSchedules.length > 0) {
+        setSchedules(generatedSchedules);
         setCurrentScheduleIndex(0);
       } else {
         // No schedules found at all, even with removals. Time for AI.
@@ -120,7 +122,7 @@ export default function SchedulePage() {
     } else if (isMounted) {
       setIsLoading(false);
     }
-  }, [courses, isMounted, runScheduler]);
+  }, [isMounted, runScheduler]); // Removed `courses` from dependency array to prevent re-running on every course change, relying on manual recall or initial load.
 
   useEffect(() => {
     setIsMounted(true);
@@ -133,7 +135,20 @@ export default function SchedulePage() {
     }
   }, []);
 
-  const currentSchedule = useMemo(() => schedules[currentScheduleIndex], [schedules, currentScheduleIndex]);
+  const { currentSchedule, includedCoursesInSchedule, excludedCoursesInSchedule } = useMemo(() => {
+    if (!schedules || schedules.length === 0) {
+      return { currentSchedule: null, includedCoursesInSchedule: [], excludedCoursesInSchedule: [] };
+    }
+    const schedule = schedules[currentScheduleIndex];
+    if (!schedule) {
+       return { currentSchedule: null, includedCoursesInSchedule: [], excludedCoursesInSchedule: [] };
+    }
+    const includedIds = Object.keys(schedule);
+    const included = courses.filter(c => includedIds.includes(c.id));
+    const excluded = courses.filter(c => !includedIds.includes(c.id));
+    return { currentSchedule: schedule, includedCoursesInSchedule: included, excludedCoursesInSchedule: excluded };
+  }, [schedules, currentScheduleIndex, courses]);
+
 
   const handleLockSection = (courseId: string, sectionId: string) => {
     // This functionality is currently disabled in the UI but the handler is here for future use.
@@ -162,19 +177,18 @@ export default function SchedulePage() {
             total={schedules.length}
             onNext={() => setCurrentScheduleIndex(i => (i + 1) % schedules.length)}
             onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
-            disableSemesterSplit={true}
           />
-           {excludedCourses.length > 0 && (
+           {excludedCoursesInSchedule.length > 0 && (
             <Alert className="mt-4 border-primary/50 text-primary-foreground">
               <Info className="h-4 w-4" />
               <AlertTitle>Partial Schedule Generated</AlertTitle>
               <AlertDescription>
-                We couldn't fit all your courses. The schedule below works by excluding: <strong>{excludedCourses.map(c => c.name).join(', ')}</strong>.
+                We couldn't fit all your courses. The schedule below works by excluding: <strong>{excludedCoursesInSchedule.map(c => c.name).join(', ')}</strong>.
               </AlertDescription>
             </Alert>
           )}
           <ScheduleView
-            courses={includedCourses}
+            courses={includedCoursesInSchedule}
             schedule={currentSchedule}
             lockedSections={lockedSections}
             onLockToggle={handleLockSection}

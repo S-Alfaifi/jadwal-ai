@@ -38,10 +38,6 @@ export function ScheduleControls({
             </Button>
           </>
         )}
-        <Button variant="outline" disabled={disableSemesterSplit}>
-          <Columns className="mr-2 h-4 w-4" />
-          Split into Two Semesters
-        </Button>
       </div>
     </div>
   );
