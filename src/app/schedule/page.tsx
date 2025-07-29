@@ -157,9 +157,9 @@ export default function SchedulePage() {
           />
            {excludedCoursesForThisSchedule.length > 0 && (
             <Alert variant="destructive" className="mt-4 bg-destructive/10">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle className="font-bold">Partial Schedule Generated</AlertTitle>
-              <AlertDescription className="text-destructive-foreground/90 space-y-1">
+              <AlertTriangle className="h-4 w-4 text-destructive-foreground/90" />
+              <AlertTitle className="font-bold text-foreground">Partial Schedule Generated</AlertTitle>
+              <AlertDescription className="text-foreground/90 space-y-1">
                  {conflictForThisSchedule ? (
                     <p>
                       A full schedule could not be created because <span className="font-semibold">{conflictForThisSchedule.courses.map(c => c.name).join(' and ')}</span> have a <span className="font-semibold">{conflictForThisSchedule.type} conflict</span>.
