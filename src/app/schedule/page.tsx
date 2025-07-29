@@ -12,7 +12,7 @@ import { Logo } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Course, Schedule, GenerationResult, Conflict } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
-import { Tooltip, TooltipProvider } from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -191,17 +191,19 @@ export default function SchedulePage() {
        <header className="py-6 px-4 md:px-8 border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto flex justify-between items-center">
             <Logo />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" onClick={() => router.push('/')}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Edit
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Return to the course selection page</p>
-              </TooltipContent>
-            </Tooltip>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" onClick={() => router.push('/')}>
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to Edit
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Return to the course selection page</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
         </div>
       </header>
 
