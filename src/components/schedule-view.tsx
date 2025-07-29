@@ -4,7 +4,7 @@
 import React, { useMemo } from 'react';
 import type { Course, Schedule, Section, Day, LayoutDirection } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface ScheduleViewProps {
@@ -104,9 +104,9 @@ const VerticalLayout = ({ scheduledItems, startHour, endHour }: { scheduledItems
 
 const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number }) => {
     const timeToPosition = (time: string): number => {
-        const [h, m] = time.split(':').map(Number);
-        const hoursFromStart = h - startHour;
-        return hoursFromStart * 2 + (m / 30);
+        const minutes = timeToMinutes(time);
+        const startMinutes = startHour * 60;
+        return (minutes - startMinutes) / 30;
     };
 
     const numTimeSlots = (endHour - startHour) * 2;
@@ -128,7 +128,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
 
         {/* Day Headers */}
         {ALL_DAYS.map((day, dayIndex) => (
-            <div key={day} className="bg-card text-center font-bold p-4 text-primary-foreground flex items-center justify-center border-t border-border first:border-t-0" style={{ gridRowStart: dayIndex + 2 }}>{day}</div>
+            <div key={day} className="bg-card text-center font-bold p-4 text-primary-foreground flex items-center justify-center" style={{ gridRowStart: dayIndex + 2 }}>{day}</div>
         ))}
         
         {/* Grid Content Area */}
@@ -200,8 +200,8 @@ export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
         return { startHour: 8, endHour: 17 };
     }
 
-    let minMinute = 8 * 60; // default 8am
-    let maxMinute = 17 * 60; // default 5pm
+    let minMinute = 24 * 60;
+    let maxMinute = 0;
 
     scheduledItems.forEach(({section}) => {
         const times = [section.lecture];
@@ -215,37 +215,39 @@ export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
         })
     });
     
-    // Round to nearest full hour and add padding
-    let startH = minutesToHour(minMinute);
-    let endH = Math.ceil(maxMinute / 60);
+    let startH = Math.max(0, minutesToHour(minMinute) - 1);
+    let endH = Math.min(24, Math.ceil(maxMinute / 60) + 1);
 
-    // Add padding
-    startH = Math.max(0, startH - 1);
-    endH = Math.min(24, endH + 1);
+    if (endH - startH < 4) {
+      endH = startH + 4;
+    }
 
     return {startHour: startH, endHour: endH};
   }, [scheduledItems]);
 
   const renderSummary = () => (
     <div className="mt-8">
-      <h3 className="text-2xl font-headline font-bold mb-4">Course Summary</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {scheduledItems.map(({ course, section }) => (
-          <Card key={`${course.id}-${section.id}`}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: course.color }} />
-                <h4 className="font-bold">{course.name}</h4>
-              </div>
-              <p className="text-sm text-muted-foreground">{section.name}</p>
-              <div className="text-xs mt-2 space-y-1 text-muted-foreground">
-                  <p><b>Lecture:</b> {section.lecture.days.join(', ')} {section.lecture.startTime}-{section.lecture.endTime}</p>
-                  {section.lab && <p><b>Lab:</b> {section.lab.days.join(', ')} {section.lab.startTime}-{section.lab.endTime}</p>}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Card>
+          <CardHeader>
+            <CardTitle>Course Summary</CardTitle>
+            <CardDescription>Details for the currently displayed schedule.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {scheduledItems.map(({ course, section }) => (
+              <Card key={`${course.id}-${section.id}`} className="flex items-start gap-4 p-4">
+                 <div className="w-2 h-2 mt-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: course.color }} />
+                <div>
+                  <h4 className="font-bold">{course.name}</h4>
+                  <p className="text-sm text-muted-foreground">{section.name}</p>
+                  <div className="text-xs mt-2 space-y-1 text-muted-foreground">
+                      <p><b>Lecture:</b> {section.lecture.days.join(', ')} {section.lecture.startTime}-{section.lecture.endTime}</p>
+                      {section.lab && <p><b>Lab:</b> {section.lab.days.join(', ')} {section.lab.startTime}-{section.lab.endTime}</p>}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </CardContent>
+      </Card>
     </div>
   );
 
@@ -263,3 +265,6 @@ export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
     </div>
   );
 }
+
+
+    
