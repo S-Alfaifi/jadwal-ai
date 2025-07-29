@@ -24,7 +24,6 @@ export default function SchedulePage() {
   const router = useRouter();
   const scheduleRef = useRef<{
     scheduleGrid: HTMLDivElement | null;
-    summary: HTMLDivElement | null;
   }>(null);
 
   const runScheduler = useCallback(() => {
@@ -112,7 +111,6 @@ export default function SchedulePage() {
     const element = scheduleRef.current.scheduleGrid.firstChild as HTMLElement;
     if(!element) return;
     
-    // Temporarily modify styles for full capture
     const originalStyle = {
       overflow: element.style.overflow,
       width: element.style.width,
@@ -136,7 +134,6 @@ export default function SchedulePage() {
     } catch (err) {
         console.error('Failed to save image', err);
     } finally {
-        // Restore original styles
         element.style.overflow = originalStyle.overflow;
         element.style.width = originalStyle.width;
         element.style.height = originalStyle.height;
