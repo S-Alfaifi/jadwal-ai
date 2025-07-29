@@ -189,7 +189,7 @@ export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
   
   const {startHour, endHour} = useMemo(() => {
     if(scheduledItems.length === 0) {
-        return { startHour: 8, endHour: 17 };
+        return { startHour: 8, endHour: 18 }; // Default range
     }
 
     let minMinute = 24 * 60;
