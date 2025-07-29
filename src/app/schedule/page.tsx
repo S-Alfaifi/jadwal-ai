@@ -42,7 +42,15 @@ export default function SchedulePage() {
   };
 
   const runScheduler = useCallback(() => {
-    if (courses.length === 0) {
+    const activeCourses = courses
+      .filter(c => c.isEnabled)
+      .map(c => ({
+          ...c,
+          sections: c.sections.filter(s => s.isEnabled)
+      }))
+      .filter(c => c.sections.length > 0);
+
+    if (activeCourses.length === 0) {
       setIsLoading(false);
       return;
     }
@@ -54,12 +62,12 @@ export default function SchedulePage() {
         let generatedSchedules: Schedule[] = [];
 
         // Try with all courses first
-        generatedSchedules = generateSchedules(courses, {});
+        generatedSchedules = generateSchedules(activeCourses, {});
 
         // If no schedule, try removing courses one by one
-        if (generatedSchedules.length === 0 && courses.length > 1) {
-            for (let i = courses.length - 1; i >= 1; i--) {
-                const courseCombinations = getCombinations(courses, i);
+        if (generatedSchedules.length === 0 && activeCourses.length > 1) {
+            for (let i = activeCourses.length - 1; i >= 1; i--) {
+                const courseCombinations = getCombinations(activeCourses, i);
                 for (const combo of courseCombinations) {
                     const partialSchedules = generateSchedules(combo, {});
                     if (partialSchedules.length > 0) {
@@ -112,7 +120,7 @@ export default function SchedulePage() {
     }
     const includedIds = Object.keys(schedule);
     const included = courses.filter(c => includedIds.includes(c.id));
-    const excluded = courses.filter(c => !includedIds.includes(c.id));
+    const excluded = courses.filter(c => c.isEnabled && !includedIds.includes(c.id));
     return { currentSchedule: schedule, includedCoursesInSchedule: included, excludedCoursesInSchedule: excluded };
   }, [schedules, currentScheduleIndex, courses]);
 
@@ -143,7 +151,7 @@ export default function SchedulePage() {
               <Info className="h-4 w-4" />
               <AlertTitle>Partial Schedule Generated</AlertTitle>
               <AlertDescription>
-                We couldn't fit all your courses. The schedule below works by excluding: <strong>{excludedCoursesInSchedule.map(c => c.name).join(', ')}</strong>.
+                We couldn't fit all your enabled courses. The schedule below works by excluding: <strong>{excludedCoursesInSchedule.map(c => c.name).join(', ')}</strong>.
               </AlertDescription>
             </Alert>
           )}
@@ -160,7 +168,7 @@ export default function SchedulePage() {
         <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
         <h3 className="mt-4 text-xl font-bold text-primary-foreground">No Conflict-Free Schedule Found</h3>
         <p className="mt-2 text-base text-muted-foreground">
-          We couldn't generate any possible schedule with the courses you provided.
+          We couldn't generate any possible schedule with the courses and sections you enabled.
         </p>
         <Button onClick={() => router.push('/')} className="mt-6">
           Go Back and Edit Courses

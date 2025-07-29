@@ -14,6 +14,7 @@ export interface Section {
   name: string;
   lecture: SectionTime;
   lab?: SectionTime;
+  isEnabled: boolean;
 }
 
 export interface Course {
@@ -21,6 +22,7 @@ export interface Course {
   name: string;
   sections: Section[];
   color: string;
+  isEnabled: boolean;
 }
 
 export interface Schedule {

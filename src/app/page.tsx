@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -12,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Course, Section } from "@/lib/types";
 import { generatePastelColor } from "@/lib/colors";
 
-type CourseFormData = Omit<Course, 'id' | 'color' | 'sections'> & { id?: string, sections: (Omit<Section, 'id'> & {id?: string})[] };
+type CourseFormData = Omit<Course, 'id' | 'color' | 'sections' | 'isEnabled'> & { id?: string, sections: (Omit<Section, 'id' | 'isEnabled'> & {id?: string})[] };
 
 export default function Home() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -26,7 +27,17 @@ export default function Home() {
     setIsMounted(true);
     const savedCourses = localStorage.getItem("courses");
     if (savedCourses) {
-      setCourses(JSON.parse(savedCourses));
+      const parsedCourses: Course[] = JSON.parse(savedCourses);
+      // Backwards compatibility for courses saved without isEnabled property
+      const coursesWithDefaults = parsedCourses.map(course => ({
+          ...course,
+          isEnabled: course.isEnabled !== undefined ? course.isEnabled : true,
+          sections: course.sections.map(section => ({
+              ...section,
+              isEnabled: section.isEnabled !== undefined ? section.isEnabled : true
+          }))
+      }));
+      setCourses(coursesWithDefaults);
     }
   }, []);
   
@@ -55,14 +66,21 @@ export default function Home() {
   };
 
   const handleFormSubmit = (data: CourseFormData) => {
-    const sectionsWithIds = data.sections.map(s => ({
+    const sectionsWithIdsAndState = data.sections.map(s => ({
         ...s,
-        id: s.id || `section_${Date.now()}_${Math.random()}`
+        id: s.id || `section_${Date.now()}_${Math.random()}`,
+        isEnabled: true
     }));
 
     if (editingCourse) {
+      const originalCourse = courses.find(c => c.id === editingCourse.id);
+      const updatedSections = sectionsWithIdsAndState.map(newSection => {
+        const oldSection = originalCourse?.sections.find(s => s.id === newSection.id);
+        return oldSection ? { ...newSection, isEnabled: oldSection.isEnabled } : newSection;
+      });
+
       setCourses(
-        courses.map((c) => (c.id === editingCourse.id ? { ...c, ...data, id: c.id, sections: sectionsWithIds } : c))
+        courses.map((c) => (c.id === editingCourse.id ? { ...c, ...data, sections: updatedSections } : c))
       );
       toast({
         title: "Course Updated",
@@ -73,7 +91,8 @@ export default function Home() {
         ...data, 
         id: `course_${Date.now()}`,
         color: generatePastelColor(courses.length),
-        sections: sectionsWithIds
+        sections: sectionsWithIdsAndState,
+        isEnabled: true
       };
       setCourses([...courses, newCourse]);
       toast({
@@ -83,12 +102,36 @@ export default function Home() {
     }
     setIsModalOpen(false);
   };
+
+  const handleToggleCourse = (courseId: string, isEnabled: boolean) => {
+    setCourses(prevCourses =>
+      prevCourses.map(course =>
+        course.id === courseId ? { ...course, isEnabled } : course
+      )
+    );
+  };
+
+  const handleToggleSection = (courseId: string, sectionId: string, isEnabled: boolean) => {
+    setCourses(prevCourses =>
+      prevCourses.map(course =>
+        course.id === courseId
+          ? {
+              ...course,
+              sections: course.sections.map(section =>
+                section.id === sectionId ? { ...section, isEnabled } : section
+              ),
+            }
+          : course
+      )
+    );
+  };
   
   const handleGenerateSchedule = () => {
-    if (courses.length === 0) {
+    const activeCourses = courses.filter(c => c.isEnabled && c.sections.some(s => s.isEnabled));
+    if (activeCourses.length === 0) {
       toast({
-        title: "No Courses Added",
-        description: "Please add at least one course to generate a schedule.",
+        title: "No Active Courses",
+        description: "Please enable at least one course and section to generate a schedule.",
         variant: "destructive",
       });
       return;
@@ -112,7 +155,7 @@ export default function Home() {
             Create Your Schedule
           </h1>
           <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
-            Add your courses and their sections below. Our intelligent planner will then generate conflict-free schedules for you.
+            Add your courses below. Toggle courses or specific sections to include them in the final schedule.
           </p>
         </div>
 
@@ -136,6 +179,8 @@ export default function Home() {
                   course={course}
                   onEdit={() => handleEditCourse(course)}
                   onDelete={() => handleDeleteCourse(course.id)}
+                  onToggleCourse={handleToggleCourse}
+                  onToggleSection={handleToggleSection}
                 />
               ))
             ) : (
@@ -153,7 +198,7 @@ export default function Home() {
 
       <footer className="sticky bottom-0 bg-background/80 backdrop-blur-sm p-4 border-t">
           <div className="max-w-4xl mx-auto">
-            <Button size="lg" className="w-full" onClick={handleGenerateSchedule} disabled={courses.length === 0}>
+            <Button size="lg" className="w-full" onClick={handleGenerateSchedule} disabled={courses.filter(c => c.isEnabled).length === 0}>
               Generate Schedule
             </Button>
           </div>
@@ -177,5 +222,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
