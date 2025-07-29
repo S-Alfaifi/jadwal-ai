@@ -128,7 +128,7 @@ export default function Home() {
                   key={course.id}
                   course={course}
                   onEdit={() => handleEditCourse(course)}
-                  onDelete={() => handleDeleteCourse(courseId)}
+                  onDelete={() => handleDeleteCourse(course.id)}
                 />
               ))
             ) : (
