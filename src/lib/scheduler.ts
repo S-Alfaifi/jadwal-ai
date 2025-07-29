@@ -115,6 +115,7 @@ const getCombinations = <T,>(array: T[], size: number): T[][] => {
 export function generateSchedules(allCourses: Course[]): GenerationResult {
     let bestSchedules: Schedule[] = [];
     let excludedCourses: Course[] = [];
+    let successfulCombo: Course[] = [];
 
     for (let i = allCourses.length; i >= 1 && bestSchedules.length === 0; i--) {
         const courseCombinations = getCombinations(allCourses, i);
@@ -126,6 +127,7 @@ export function generateSchedules(allCourses: Course[]): GenerationResult {
                 courseIndex: number,
                 currentSelection: { course: Course; sectionId: string }[]
             ) {
+                if (validSchedules.length > 0) return; // Optimization: stop if we found one for this combo
                 if (courseIndex === combo.length) {
                     if (getScheduleConflicts(currentSelection).length === 0) {
                         const finalSchedule: Schedule = {};
@@ -144,18 +146,21 @@ export function generateSchedules(allCourses: Course[]): GenerationResult {
             }
 
             findSchedulesRecursive(0, []);
-            bestSchedules.push(...validSchedules);
-        }
 
+            if (validSchedules.length > 0) {
+                bestSchedules.push(...validSchedules);
+                successfulCombo = combo;
+            }
+        }
+        
         if (bestSchedules.length > 0) {
-            excludedCourses = allCourses.filter(c => !combo.some(included => included.id === c.id));
+            excludedCourses = allCourses.filter(c => !successfulCombo.some(included => included.id === c.id));
             break;
         }
     }
     
     const conflicts: Conflict[] = [];
     if (bestSchedules.length === 0 && allCourses.length > 0) {
-        // If we still found no schedules, find conflicts in the original set
         const sectionsToTest = allCourses.map(c => ({ course: c, sectionId: c.sections[0].id }));
         conflicts.push(...getScheduleConflicts(sectionsToTest));
     }
