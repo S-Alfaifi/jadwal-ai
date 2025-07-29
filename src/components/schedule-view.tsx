@@ -4,7 +4,7 @@
 import React from 'react';
 import type { Course, Schedule, Section, Day, LayoutDirection } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
-import { Card, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface ScheduleViewProps {
@@ -97,19 +97,21 @@ const HorizontalLayout = ({ scheduledItems }: { scheduledItems: { course: Course
   const timeLabels = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
 
   return (
-    <div className="grid grid-rows-[auto_repeat(5,1fr)] grid-cols-[auto_1fr] gap-px bg-border rounded-lg overflow-hidden border">
+    <div className="grid grid-rows-[auto_repeat(5,minmax(6rem,auto))] grid-cols-[auto_1fr] gap-px bg-border rounded-lg overflow-hidden border">
         {/* Corner */}
         <div className="bg-card p-2 row-start-1 col-start-1"></div>
 
         {/* Time Headers */}
-        <div className="bg-card p-2 row-start-1 col-start-2 grid" style={{ gridTemplateColumns: `repeat(${numTimeSlots}, 1fr)` }}>
-            {timeLabels.map(hour => (
-                <div key={hour} className="col-span-2 text-center text-xs font-medium text-muted-foreground -ml-4">{`${hour}:00`}</div>
+        <div className="bg-card p-2 row-start-1 col-start-2 grid relative" style={{ gridTemplateColumns: `repeat(${timeLabels.length -1}, 1fr)` }}>
+            {timeLabels.map((hour, index) => (
+                 <div key={hour} className="text-center text-xs font-medium text-muted-foreground" style={{ gridColumn: `${index + 1}` }}>
+                    {`${hour}:00`}
+                </div>
             ))}
         </div>
 
         {/* Day Headers */}
-        {ALL_DAYS.map((day, dayIndex) => (
+        {ALL_DAYS.map((day) => (
             <div key={day} className="bg-card text-center font-bold p-4 text-primary-foreground flex items-center justify-center">{day}</div>
         ))}
         
@@ -125,7 +127,7 @@ const HorizontalLayout = ({ scheduledItems }: { scheduledItems: { course: Course
             ))}
 
             {/* Scheduled Items */}
-            <div className="row-start-1 row-span-5 col-start-1 col-span-full grid grid-rows-5 grid-cols-18 h-full p-1 gap-1">
+            <div className="row-start-1 row-span-5 col-start-1 col-span-1 grid h-full p-1 gap-1" style={{gridTemplateRows: 'repeat(5, 1fr)', gridTemplateColumns: `repeat(${numTimeSlots}, 1fr)`}}>
                 {scheduledItems.map(({ course, section }) => {
                     const events = [];
                     if(section.lecture) events.push({type: 'Lecture', time: section.lecture});
@@ -211,27 +213,3 @@ export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
     </div>
   );
 }
-
-// Add this to your tailwind.config.ts `extend` block if not present
-// gridColumn: {
-//   'span-18': 'span 18 / span 18',
-//   '1 / 19': '1 / 19',
-//    ... other values you might need
-// },
-// and in `safelist` if you use dynamic class names
-// { pattern: /grid-cols-18/ },
-// { pattern: /col-start-(d+)/ },
-// { pattern: /col-end-(d+)/ },
-// { pattern: /grid-rows-5/ },
-// { pattern: /row-start-(d+)/ },
-// For this example I will define it in the component itself to avoid config changes.
-const HorizontalLayoutGrid = ({ children }: { children: React.ReactNode }) => (
-    <div className="grid grid-rows-5 grid-cols-[repeat(18,minmax(0,1fr))] h-full p-1 gap-1">
-        {children}
-    </div>
-)
-Object.assign(HorizontalLayoutGrid, {
-    displayName: 'HorizontalLayoutGrid',
-});
-
-    
