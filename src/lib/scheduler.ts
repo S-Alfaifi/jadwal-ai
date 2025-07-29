@@ -112,109 +112,98 @@ function calculateGapScore(schedule: { course: Course; sectionId: string }[]): n
   return totalGaps;
 }
 
-const getCombinations = <T,>(array: T[], size: number): T[][] => {
-    if (size < 0 || size > array.length) {
-        return [];
+function findSchedulesForCourseSet(courses: Course[], allCourses: Course[]): Schedule[] {
+  if (courses.length === 0) return [];
+  const schedules: Schedule[] = [];
+
+  function findSchedulesRecursive(
+    courseIndex: number,
+    currentSelection: { course: Course; sectionId: string }[]
+  ) {
+    if (courseIndex === courses.length) {
+      if (getScheduleConflicts(currentSelection, allCourses).length === 0) {
+        const finalSchedule: Schedule = {};
+        currentSelection.forEach(item => {
+          finalSchedule[item.course.id] = { sectionId: item.sectionId };
+        });
+        schedules.push(finalSchedule);
+      }
+      return;
     }
-    const result: T[][] = [];
-    const n = array.length;
-    function combinationUtil(start: number, chosen: T[]) {
-        if (chosen.length === size) {
-            result.push([...chosen]);
-            return;
-        }
-        if (start >= n) {
-            return;
-        }
-        // Include current element
-        chosen.push(array[start]);
-        combinationUtil(start + 1, chosen);
-        chosen.pop();
-        // Exclude current element
-        combinationUtil(start + 1, chosen);
+
+    const course = courses[courseIndex];
+    for (const section of course.sections) {
+      findSchedulesRecursive(courseIndex + 1, [...currentSelection, { course, sectionId: section.id }]);
     }
-    combinationUtil(0, []);
-    return result;
-};
+  }
+
+  findSchedulesRecursive(0, []);
+  return schedules;
+}
 
 
 export function generateSchedules(allCourses: Course[]): GenerationResult {
-    let bestSchedules: Schedule[] = [];
-    let excludedCourses: Course[] = [];
-    let conflicts: Conflict[] = [];
+    // Attempt with all courses first
+    let bestSchedules = findSchedulesForCourseSet(allCourses, allCourses);
 
-    for (let i = allCourses.length; i >= 1; i--) {
-        const courseCombinations = getCombinations(allCourses, i);
+    if (bestSchedules.length > 0) {
+        return {
+            schedules: bestSchedules,
+            conflicts: [],
+            excludedCourses: [],
+        };
+    }
 
-        for (const combo of courseCombinations) {
-            const tempSchedules: Schedule[] = [];
-            
-            function findSchedulesRecursive(
-                courseIndex: number,
-                currentSelection: { course: Course; sectionId: string }[]
-            ) {
-                if (courseIndex === combo.length) {
-                    if (getScheduleConflicts(currentSelection, allCourses).length === 0) {
-                        const finalSchedule: Schedule = {};
-                        currentSelection.forEach(item => {
-                            finalSchedule[item.course.id] = { sectionId: item.sectionId };
-                        });
-                        tempSchedules.push(finalSchedule);
-                    }
-                    return;
-                }
-
-                const course = combo[courseIndex];
-                for (const section of course.sections) {
-                    findSchedulesRecursive(courseIndex + 1, [...currentSelection, { course, sectionId: section.id }]);
-                }
-            }
-            
-            findSchedulesRecursive(0, []);
-
-            if (tempSchedules.length > 0) {
-                bestSchedules = [...bestSchedules, ...tempSchedules];
-            }
-        }
+    // If no complete schedule, try removing one course at a time
+    for (let i = allCourses.length - 1; i >= 0; i--) {
+        const excludedCourse = allCourses[i];
+        const remainingCourses = allCourses.filter(c => c.id !== excludedCourse.id);
         
-        if (bestSchedules.length > 0) {
-            const includedCourseIds = new Set(Object.keys(bestSchedules[0]));
-            const coursesInSchedule = allCourses.filter(c => includedCourseIds.has(c.id));
-            excludedCourses = allCourses.filter(c => !includedCourseIds.has(c.id));
-            
-            if (excludedCourses.length > 0) {
-                for (const excluded of excludedCourses) {
-                    const potentialConflictSet = [...coursesInSchedule, excluded];
-                    const sectionsToTest = potentialConflictSet.map(c => ({ course: c, sectionId: c.sections[0].id }));
-                    const potentialConflicts = getScheduleConflicts(sectionsToTest, allCourses);
-                    if(potentialConflicts.length > 0) {
-                        conflicts = potentialConflicts;
-                        break;
-                    }
-                }
+        const partialSchedules = findSchedulesForCourseSet(remainingCourses, allCourses);
+
+        if (partialSchedules.length > 0) {
+            // We found a working set. Now, find the reason for exclusion.
+            let conflictReason: Conflict[] = [];
+            for (const includedCourse of remainingCourses) {
+                 const testSet = [includedCourse, excludedCourse];
+                 const sectionsToTest = testSet.map(c => ({ course: c, sectionId: c.sections[0].id }));
+                 const potentialConflicts = getScheduleConflicts(sectionsToTest, allCourses);
+                 if (potentialConflicts.length > 0) {
+                     conflictReason = potentialConflicts;
+                     break; 
+                 }
             }
-            break; 
+             if (conflictReason.length === 0) {
+                // Fallback if direct pairwise conflict isn't found (more complex multi-course issue)
+                const sectionsToTest = allCourses.map(c => ({ course: c, sectionId: c.sections[0].id }));
+                conflictReason = getScheduleConflicts(sectionsToTest, allCourses);
+            }
+
+            const scoredSchedules = partialSchedules.map(schedule => {
+                const selection = Object.keys(schedule).map(courseId => {
+                    const course = allCourses.find(c => c.id === courseId)!;
+                    return { course, sectionId: schedule[courseId].sectionId };
+                });
+                return { schedule, score: calculateGapScore(selection) };
+            }).sort((a, b) => a.score - b.score);
+
+            const uniqueSchedules = [...new Set(scoredSchedules.map(s => JSON.stringify(s.schedule)))].slice(0, 20).map(s => JSON.parse(s));
+            
+            return {
+                schedules: uniqueSchedules,
+                conflicts: conflictReason.slice(0,1),
+                excludedCourses: [excludedCourse],
+            };
         }
     }
     
-    if (bestSchedules.length === 0 && allCourses.length > 1) {
-        const sectionsToTest = allCourses.map(c => ({ course: c, sectionId: c.sections[0].id }));
-        conflicts = getScheduleConflicts(sectionsToTest, allCourses);
-    }
-
-    const scoredSchedules = bestSchedules.map(schedule => {
-        const selection = Object.keys(schedule).map(courseId => {
-            const course = allCourses.find(c => c.id === courseId)!;
-            return { course, sectionId: schedule[courseId].sectionId };
-        });
-        return { schedule, score: calculateGapScore(selection) };
-    }).sort((a, b) => a.score - b.score);
-    
-    const uniqueSchedules = [...new Set(scoredSchedules.map(s => JSON.stringify(s.schedule)))].slice(0, 20).map(s => JSON.parse(s));
+    // If no schedule can be generated at all (even with removals)
+    const sectionsToTest = allCourses.map(c => ({ course: c, sectionId: c.sections[0].id }));
+    const conflicts = getScheduleConflicts(sectionsToTest, allCourses);
 
     return {
-        schedules: uniqueSchedules,
-        conflicts: conflicts.slice(0, 1),
-        excludedCourses,
+        schedules: [],
+        conflicts: conflicts.slice(0,1),
+        excludedCourses: allCourses,
     };
 }
