@@ -9,10 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 interface ScheduleViewProps {
   courses: Course[];
   schedule: Schedule;
-  lockedSections: Record<string, string>;
-  onLockToggle: (courseId: string, sectionId: string) => void;
-  onSectionChange: (courseId: string, newSectionId: string) => void;
-  layout: 'horizontal';
 }
 
 const timeToMinutes = (time: string): number => {
@@ -21,14 +17,14 @@ const timeToMinutes = (time: string): number => {
 };
 
 interface PositionedEvent {
-    course: Course;
-    section: Section;
-    type: 'Lecture' | 'Lab';
-    time: SectionTime;
-    day: Day;
-    startMinutes: number;
-    endMinutes: number;
-    track: number;
+  course: Course;
+  section: Section;
+  type: 'Lecture' | 'Lab';
+  time: SectionTime;
+  day: Day;
+  startMinutes: number;
+  endMinutes: number;
+  track: number;
 }
 
 const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number }) => {
@@ -41,7 +37,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
     const positionedEvents = useMemo(() => {
         const allEvents: Omit<PositionedEvent, 'track'>[] = [];
         scheduledItems.forEach(({ course, section }) => {
-            const processTime = (type: 'Lecture' | 'Lab', time: SectionTime) => {
+            const processTime = (type: 'Lecture' | 'Lab', time: SectionTime | undefined) => {
                 if (!time) return;
                 time.days.forEach(day => {
                     allEvents.push({
@@ -52,7 +48,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                 });
             };
             processTime('Lecture', section.lecture);
-            if (section.lab) processTime('Lab', section.lab);
+            processTime('Lab', section.lab);
         });
 
         const finalEvents: PositionedEvent[] = [];
@@ -67,18 +63,19 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                     event.startMinutes < existingEvent.endMinutes && event.endMinutes > existingEvent.startMinutes
                 );
                 if (!hasConflict) {
-                    track.push(event as PositionedEvent);
-                    (event as PositionedEvent).track = trackIndex;
+                    const positionedEvent = { ...event, track: trackIndex };
+                    track.push(positionedEvent);
+                    finalEvents.push(positionedEvent);
                     placed = true;
                     break;
                 }
             }
             if (!placed) {
                 const newTrackIndex = dayTracks[event.day].length;
-                dayTracks[event.day].push([event as PositionedEvent]);
-                (event as PositionedEvent).track = newTrackIndex;
+                const positionedEvent = { ...event, track: newTrackIndex };
+                dayTracks[event.day].push([positionedEvent]);
+                finalEvents.push(positionedEvent);
             }
-            finalEvents.push(event as PositionedEvent);
         });
 
         return finalEvents;
@@ -99,12 +96,10 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
     }, [positionedEvents]);
 
     return (
-        <div className="grid grid-cols-[auto,1fr] bg-background font-sans">
-            {/* Top-left empty cell */}
+        <div className="grid grid-cols-[auto_1fr] bg-background font-sans">
             <div className="sticky left-0 top-0 z-30 bg-card border-b border-r"></div>
             
-            {/* Time Headers */}
-            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, 6rem)`}}>
+            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(6rem, 1fr))`}}>
                  {timeSlots.map((time) => (
                     <div key={time} className="text-center p-2 text-xs font-medium text-muted-foreground border-b border-r" >
                         {time.endsWith('00') ? time : ''}
@@ -112,60 +107,57 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                 ))}
             </div>
 
-
-            {/* Day Rows and Events */}
             <div className="sticky left-0 z-20 flex flex-col">
                 {ALL_DAYS.map((day) => (
-                    <div key={day} className="flex-grow flex items-center justify-center p-2 font-bold text-primary-foreground bg-card border-b border-r" style={{minHeight: `${dayTrackCounts[day] * 70}px`}}>
+                    <div key={day} className="flex-grow flex items-center justify-center p-2 font-bold text-primary-foreground bg-card border-b border-r" style={{minHeight: `${dayTrackCounts[day] * 80}px`}}>
                        {day}
                     </div>
                 ))}
             </div>
 
-            <div className="relative grid auto-rows-[70px]" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, 6rem)`}}>
-                {/* Background Grid Lines */}
-                {ALL_DAYS.map((day, dayIndex) => {
-                     const totalTracksBefore = ALL_DAYS.slice(0, dayIndex).reduce((acc, curr) => acc + dayTrackCounts[curr], 0);
-                     const rowStart = totalTracksBefore + 1;
-                     const rowEnd = totalTracksBefore + dayTrackCounts[day] + 1;
-                     return Array.from({length: timeSlots.length}).map((_, timeIndex) => (
-                        <div key={`${day}-${timeIndex}`} className="border-r border-b" style={{
-                            gridRowStart: rowStart,
-                            gridRowEnd: rowEnd,
-                            gridColumn: timeIndex + 1,
-                        }}/>
-                     ))
-                })}
+            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(6rem, 1fr))`}}>
+                {ALL_DAYS.map((day, dayIndex) => (
+                    positionedEvents.filter(e => e.day === day).map((item, eventIndex) => {
+                        const startCol = ((item.startMinutes - startHour * 60) / 30);
+                        const durationCols = (item.endMinutes - item.startMinutes) / 30;
+                        
+                        const dayRowStart = ALL_DAYS.slice(0, dayIndex).reduce((acc, d) => acc + dayTrackCounts[d], 0) + 1;
+                        const rowStart = dayRowStart + item.track;
 
-                {/* Events */}
-                {positionedEvents.map((item) => {
-                    const startCol = ((timeToMinutes(item.time.startTime) - startHour * 60) / 30);
-                    const endCol = ((timeToMinutes(item.time.endTime) - startHour * 60) / 30);
-                    const dayIndex = ALL_DAYS.indexOf(item.day);
-                    const totalTracksBefore = ALL_DAYS.slice(0, dayIndex).reduce((acc, curr) => acc + dayTrackCounts[curr], 0);
-                    const rowStart = totalTracksBefore + item.track + 1;
-
-                    return (
-                        <div
-                            key={`${item.course.id}-${item.section.id}-${item.day}-${item.type}`}
-                            className="rounded-lg p-2 flex flex-col justify-center relative overflow-hidden text-black m-px shadow-sm"
-                            style={{
-                                gridRow: `${rowStart} / span 1`,
-                                gridColumn: `${startCol + 1} / span ${endCol - startCol}`,
-                                backgroundColor: item.course.color,
-                                zIndex: 10,
-                            }}
-                             title={`${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`}>
-                            <div>
-                                <p className="font-bold text-sm text-black/80 truncate">{item.course.name}</p>
-                                <p className="text-xs text-black/70 truncate">{item.section.name} ({item.type})</p>
+                        return (
+                            <div
+                                key={`${item.course.id}-${item.section.id}-${item.day}-${item.type}-${eventIndex}`}
+                                className="rounded-lg p-2 flex flex-col justify-center relative overflow-hidden text-black m-1 shadow-md"
+                                style={{
+                                    gridRow: `${rowStart} / span 1`,
+                                    gridColumn: `${startCol + 1} / span ${durationCols}`,
+                                    backgroundColor: item.course.color,
+                                    zIndex: 10,
+                                    minHeight: '72px'
+                                }}
+                                 title={`${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`}>
+                                <div>
+                                    <p className="font-bold text-sm text-black/80 truncate">{item.course.name}</p>
+                                    <p className="text-xs text-black/70 truncate">{item.section.name} ({item.type})</p>
+                                </div>
+                                <div className="text-xs text-black/60 font-mono mt-1">
+                                    {item.time.startTime} - {item.time.endTime}
+                                </div>
                             </div>
-                            <div className="text-xs text-black/60 font-mono mt-1">
-                                {item.time.startTime} - {item.time.endTime}
-                            </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })
+                ))}
+                 {ALL_DAYS.map((day, dayIndex) => {
+                    const dayRowStart = ALL_DAYS.slice(0, dayIndex).reduce((acc, d) => acc + dayTrackCounts[d], 0) + 1;
+                    return Array.from({length: dayTrackCounts[day]}).map((_, trackIndex) => (
+                        Array.from({length: timeSlots.length}).map((_, timeIndex) => (
+                            <div key={`${day}-${trackIndex}-${timeIndex}`} className="border-r border-b" style={{
+                                gridRow: dayRowStart + trackIndex,
+                                gridColumn: timeIndex + 1
+                            }}/>
+                        ))
+                    ))
+                 })}
             </div>
         </div>
     );
@@ -189,7 +181,7 @@ export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
   
   const {startHour, endHour} = useMemo(() => {
     if(scheduledItems.length === 0) {
-        return { startHour: 8, endHour: 18 }; // Default range
+        return { startHour: 8, endHour: 18 };
     }
 
     let minMinute = 24 * 60;
@@ -211,7 +203,7 @@ export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
     const startH = Math.floor(minMinute/60);
     const endH = Math.ceil(maxMinute/60);
 
-    return {startHour: startH, endHour: endH};
+    return {startHour: startH, endHour: Math.max(endH, startH + 1)};
   }, [scheduledItems]);
 
   const renderSummary = () => (

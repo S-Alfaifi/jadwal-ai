@@ -4,25 +4,19 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, ArrowLeft, Info, Rows3, Columns3, RefreshCw } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, Info } from 'lucide-react';
 import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
 import { Logo } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Course, Schedule } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
-  const [lockedSections, setLockedSections] = useState<Record<string, string>>({});
   
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -47,8 +41,7 @@ export default function SchedulePage() {
     return result;
   };
 
-
-  const runScheduler = useCallback(async () => {
+  const runScheduler = useCallback(() => {
     if (courses.length === 0) {
       setIsLoading(false);
       return;
@@ -57,24 +50,22 @@ export default function SchedulePage() {
     setIsLoading(true);
     setCurrentScheduleIndex(0);
     
-    // Using a timeout to ensure UI updates before heavy computation
     setTimeout(() => {
         let generatedSchedules: Schedule[] = [];
 
         // Try with all courses first
-        generatedSchedules = generateSchedules(courses, lockedSections);
+        generatedSchedules = generateSchedules(courses, {});
 
         // If no schedule, try removing courses one by one
-        if (generatedSchedules.length === 0) {
+        if (generatedSchedules.length === 0 && courses.length > 1) {
             for (let i = courses.length - 1; i >= 1; i--) {
                 const courseCombinations = getCombinations(courses, i);
                 for (const combo of courseCombinations) {
-                    const partialSchedules = generateSchedules(combo, lockedSections);
+                    const partialSchedules = generateSchedules(combo, {});
                     if (partialSchedules.length > 0) {
                         generatedSchedules.push(...partialSchedules);
                     }
                 }
-                // If we found any schedules at this level, we stop.
                 if (generatedSchedules.length > 0) {
                     break;
                 }
@@ -82,25 +73,15 @@ export default function SchedulePage() {
         }
 
         if (generatedSchedules.length > 0) {
-            // Remove duplicate schedules that might have been generated
             const uniqueSchedules = [...new Set(generatedSchedules.map(s => JSON.stringify(s)))].map(s => JSON.parse(s));
             setSchedules(uniqueSchedules);
         } else {
-            setSchedules([]); // No schedule possible at all
+            setSchedules([]);
         }
         
         setIsLoading(false);
     }, 50);
-  }, [courses, lockedSections]);
-
-
-  useEffect(() => {
-    if (isMounted && courses.length > 0) {
-      runScheduler();
-    } else if (isMounted) {
-      setIsLoading(false);
-    }
-  }, [isMounted, courses, runScheduler]);
+  }, [courses]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -113,6 +94,13 @@ export default function SchedulePage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (isMounted && courses.length > 0) {
+      runScheduler();
+    } else if (isMounted) {
+      setIsLoading(false);
+    }
+  }, [isMounted, courses, runScheduler]);
 
   const { currentSchedule, includedCoursesInSchedule, excludedCoursesInSchedule } = useMemo(() => {
     if (!schedules || schedules.length === 0) {
@@ -127,14 +115,6 @@ export default function SchedulePage() {
     const excluded = courses.filter(c => !includedIds.includes(c.id));
     return { currentSchedule: schedule, includedCoursesInSchedule: included, excludedCoursesInSchedule: excluded };
   }, [schedules, currentScheduleIndex, courses]);
-
-
-  const handleLockSection = (courseId: string, sectionId: string) => {
-    // This functionality is currently disabled in the UI but the handler is here for future use.
-  };
-  const handleSectionChange = (courseId: string, newSectionId: string) => {
-    // This functionality is currently disabled in the UI but the handler is here for future use.
-  };
 
   if (!isMounted) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   
@@ -170,10 +150,6 @@ export default function SchedulePage() {
           <ScheduleView
             courses={includedCoursesInSchedule}
             schedule={currentSchedule}
-            lockedSections={lockedSections}
-            onLockToggle={handleLockSection}
-            onSectionChange={handleSectionChange}
-            layout="horizontal"
           />
         </>
       );
