@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation';
 import { toPng } from 'html-to-image';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, ArrowLeft, Info, Download } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, Download } from 'lucide-react';
 import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
 import { Logo } from '@/components/logo';
@@ -156,19 +156,18 @@ export default function SchedulePage() {
             onSaveImage={handleSaveImage}
           />
            {excludedCoursesForThisSchedule.length > 0 && (
-            <Alert className="mt-4 border-primary/50 text-primary-foreground">
-              <Info className="h-4 w-4" />
-              <AlertTitle>Partial Schedule Generated</AlertTitle>
-              <AlertDescription>
+            <Alert variant="destructive" className="mt-4 bg-destructive/10">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle className="font-bold">Partial Schedule Generated</AlertTitle>
+              <AlertDescription className="text-destructive-foreground/90 space-y-1">
                  {conflictForThisSchedule ? (
-                    <p className="font-semibold">
-                      {conflictForThisSchedule.courses.map(c => c.name).join(' and ')} have a {conflictForThisSchedule.type} conflict.
+                    <p>
+                      A full schedule could not be created because <span className="font-semibold">{conflictForThisSchedule.courses.map(c => c.name).join(' and ')}</span> have a <span className="font-semibold">{conflictForThisSchedule.type} conflict</span>.
                     </p>
                  ) : (
                     <p>A full schedule could not be generated with all selected courses.</p>
                  )}
-                <p className="mt-2">To make a schedule, we had to exclude: <strong>{excludedCoursesForThisSchedule.map(c => c.name).join(', ')}</strong>.</p>
-                <p className="mt-1">This schedule includes: <strong>{includedCoursesInSchedule.map(c => c.name).join(', ')}</strong>.</p>
+                <p>This schedule was created by excluding: <strong className="font-semibold">{excludedCoursesForThisSchedule.map(c => c.name).join(', ')}</strong>.</p>
               </AlertDescription>
             </Alert>
           )}
