@@ -9,7 +9,7 @@ import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
 import { Logo } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { Course, Schedule, GenerationResult } from '@/lib/types';
+import type { Course, Schedule, GenerationResult, Conflict } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { TooltipProvider } from "@/components/ui/tooltip"
 
@@ -32,6 +32,7 @@ export default function SchedulePage() {
       .filter(c => c.sections.length > 0);
 
     if (activeCourses.length === 0) {
+      setGenerationResult({ schedules: [], conflicts: [], excludedCourses: [] });
       setIsLoading(false);
       return;
     }
@@ -66,49 +67,22 @@ export default function SchedulePage() {
     }
   }, [isMounted, courses, runScheduler]);
 
-  const { schedules = [], excludedCourses = [] } = generationResult || {};
+  const { schedules = [], conflicts = [], excludedCourses = [] } = generationResult || {};
 
-  const { currentSchedule, includedCoursesInSchedule, partialScheduleReason } = useMemo(() => {
+  const { currentSchedule, includedCoursesInSchedule } = useMemo(() => {
     if (!schedules || schedules.length === 0) {
-      return { currentSchedule: null, includedCoursesInSchedule: [], partialScheduleReason: null };
+      return { currentSchedule: null, includedCoursesInSchedule: [] };
     }
     const schedule = schedules[currentScheduleIndex];
     if (!schedule) {
-       return { currentSchedule: null, includedCoursesInSchedule: [], partialScheduleReason: null };
+       return { currentSchedule: null, includedCoursesInSchedule: [] };
     }
     
     const includedIds = Object.keys(schedule);
     const included = courses.filter(c => includedIds.includes(c.id));
     
-    let reason = 'a time conflict';
-    if (excludedCourses.length > 0 && generationResult?.conflicts) {
-       const includedCourseSchedules = included.map(c => ({course: c, sectionId: schedule[c.id].sectionId}));
-       const examPeriods = new Map<number, string[]>();
-
-       for (const entry of includedCourseSchedules) {
-         if (entry.course.finalExamPeriod) {
-           if (!examPeriods.has(entry.course.finalExamPeriod)) {
-             examPeriods.set(entry.course.finalExamPeriod, []);
-           }
-           examPeriods.get(entry.course.finalExamPeriod)!.push(entry.course.id);
-         }
-       }
-        
-       let hasExamConflict = false;
-       for (const [_, courseIds] of examPeriods.entries()) {
-           if(courseIds.length > 1) {
-               hasExamConflict = true;
-               break;
-           }
-       }
-        
-        if (hasExamConflict) {
-            reason = 'a final exam period conflict';
-        }
-    }
-
-    return { currentSchedule: schedule, includedCoursesInSchedule: included, partialScheduleReason: reason };
-  }, [schedules, currentScheduleIndex, courses, excludedCourses, generationResult]);
+    return { currentSchedule: schedule, includedCoursesInSchedule: included };
+  }, [schedules, currentScheduleIndex, courses]);
 
   if (!isMounted) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   
@@ -132,13 +106,14 @@ export default function SchedulePage() {
             onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
             onRegenerate={runScheduler}
           />
-           {excludedCourses.length > 0 && (
+           {excludedCourses.length > 0 && conflicts.length > 0 && (
             <Alert className="mt-4 border-primary/50 text-primary-foreground">
               <Info className="h-4 w-4" />
               <AlertTitle>Partial Schedule Generated</AlertTitle>
               <AlertDescription>
-                We couldn't fit all your enabled courses due to {partialScheduleReason || 'conflicts'}. 
-                This schedule works by excluding: <strong>{excludedCourses.map(c => c.name).join(', ')}</strong>.
+                <p className="font-semibold">{conflicts[0].message}</p>
+                <p className="mt-2">To make a schedule, we had to exclude: <strong>{excludedCourses.map(c => c.name).join(', ')}</strong>.</p>
+                <p className="mt-1">This schedule includes: <strong>{includedCoursesInSchedule.map(c => c.name).join(', ')}</strong>.</p>
               </AlertDescription>
             </Alert>
           )}
@@ -154,9 +129,13 @@ export default function SchedulePage() {
       <div className="flex flex-col items-center justify-center text-center py-16 px-8 bg-card rounded-lg border-2 border-dashed min-h-[60vh]">
         <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
         <h3 className="mt-4 text-xl font-bold text-primary-foreground">No Conflict-Free Schedule Found</h3>
-        <p className="mt-2 text-base text-muted-foreground">
-          We couldn't generate any possible schedule with the courses and sections you enabled.
-        </p>
+        {conflicts.length > 0 ? (
+           <p className="mt-2 text-base text-muted-foreground">{conflicts[0].message}</p>
+        ) : (
+           <p className="mt-2 text-base text-muted-foreground">
+             We couldn't generate any possible schedule with the courses and sections you enabled.
+           </p>
+        )}
         <Button onClick={() => router.push('/')} className="mt-6">
           Go Back and Edit Courses
         </Button>

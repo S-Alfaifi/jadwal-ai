@@ -34,7 +34,8 @@ export interface Schedule {
 
 export type Conflict = {
     type: 'time' | 'exam';
-    courses: string[];
+    courses: string[]; // course IDs
+    message: string;
 };
 
 export interface GenerationResult {

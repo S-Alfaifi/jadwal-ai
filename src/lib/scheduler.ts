@@ -18,8 +18,10 @@ function doTimesConflict(time1: SectionTime, time2: SectionTime): boolean {
   return start1 < end2 && start2 < end1;
 }
 
-function getScheduleConflicts(schedule: { course: Course; sectionId: string }[]): Conflict[] {
+function getScheduleConflicts(schedule: { course: Course; sectionId: string }[], allCourses: Course[]): Conflict[] {
   const conflicts: Conflict[] = [];
+
+  const findCourseName = (id: string) => allCourses.find(c => c.id === id)?.name || id;
 
   // Check for time conflicts
   for (let i = 0; i < schedule.length; i++) {
@@ -28,12 +30,19 @@ function getScheduleConflicts(schedule: { course: Course; sectionId: string }[])
       const entry2 = schedule[j];
       const section1 = entry1.course.sections.find(s => s.id === entry1.sectionId)!;
       const section2 = entry2.course.sections.find(s => s.id === entry2.sectionId)!;
-
-      if (doTimesConflict(section1.lecture, section2.lecture) ||
-          (section1.lab && doTimesConflict(section1.lab, section2.lecture)) ||
-          (section2.lab && doTimesConflict(section1.lecture, section2.lab)) ||
-          (section1.lab && section2.lab && doTimesConflict(section1.lab, section2.lab))) {
-        conflicts.push({ type: 'time', courses: [entry1.course.id, entry2.course.id] });
+      
+      let hasConflict = false;
+      if(doTimesConflict(section1.lecture, section2.lecture)) hasConflict = true;
+      if (section1.lab && doTimesConflict(section1.lab, section2.lecture)) hasConflict = true;
+      if (section2.lab && doTimesConflict(section1.lecture, section2.lab)) hasConflict = true;
+      if (section1.lab && section2.lab && doTimesConflict(section1.lab, section2.lab)) hasConflict = true;
+      
+      if (hasConflict) {
+        conflicts.push({ 
+            type: 'time', 
+            courses: [entry1.course.id, entry2.course.id],
+            message: `${findCourseName(entry1.course.id)} and ${findCourseName(entry2.course.id)} have a time conflict.`
+        });
       }
     }
   }
@@ -42,7 +51,11 @@ function getScheduleConflicts(schedule: { course: Course; sectionId: string }[])
   for (const entry of schedule) {
     const section = entry.course.sections.find(s => s.id === entry.sectionId)!;
     if (section.lab && doTimesConflict(section.lecture, section.lab)) {
-      conflicts.push({ type: 'time', courses: [entry.course.id, entry.course.id] });
+       conflicts.push({ 
+            type: 'time', 
+            courses: [entry.course.id, entry.course.id],
+            message: `${findCourseName(entry.course.id)} has an internal conflict between its lecture and lab.`
+       });
     }
   }
 
@@ -59,7 +72,12 @@ function getScheduleConflicts(schedule: { course: Course; sectionId: string }[])
 
   for (const [period, courseIds] of examPeriods.entries()) {
     if (courseIds.length > 1) {
-      conflicts.push({ type: 'exam', courses: courseIds });
+      const courseNames = courseIds.map(id => findCourseName(id));
+      conflicts.push({ 
+          type: 'exam', 
+          courses: courseIds,
+          message: `${courseNames.join(', ')} share the same final exam period: ${period}.`
+      });
     }
   }
   
@@ -95,6 +113,9 @@ function calculateGapScore(schedule: { course: Course; sectionId: string }[]): n
 }
 
 const getCombinations = <T,>(array: T[], size: number): T[][] => {
+    if (size < 0 || size > array.length) {
+        return [];
+    }
     const result: T[][] = [];
     function combinationUtil(start: number, chosen: T[]) {
       if (chosen.length === size) {
@@ -102,6 +123,7 @@ const getCombinations = <T,>(array: T[], size: number): T[][] => {
         return;
       }
       if (start >= array.length) return;
+      
       chosen.push(array[start]);
       combinationUtil(start + 1, chosen);
       chosen.pop();
@@ -115,26 +137,25 @@ const getCombinations = <T,>(array: T[], size: number): T[][] => {
 export function generateSchedules(allCourses: Course[]): GenerationResult {
     let bestSchedules: Schedule[] = [];
     let excludedCourses: Course[] = [];
-    let successfulCombo: Course[] = [];
+    let conflicts: Conflict[] = [];
 
-    for (let i = allCourses.length; i >= 1 && bestSchedules.length === 0; i--) {
+    for (let i = allCourses.length; i >= 1; i--) {
         const courseCombinations = getCombinations(allCourses, i);
 
         for (const combo of courseCombinations) {
-            const validSchedules: Schedule[] = [];
+            const tempSchedules: Schedule[] = [];
             
             function findSchedulesRecursive(
                 courseIndex: number,
                 currentSelection: { course: Course; sectionId: string }[]
             ) {
-                if (validSchedules.length > 0) return; // Optimization: stop if we found one for this combo
                 if (courseIndex === combo.length) {
-                    if (getScheduleConflicts(currentSelection).length === 0) {
+                    if (getScheduleConflicts(currentSelection, allCourses).length === 0) {
                         const finalSchedule: Schedule = {};
                         currentSelection.forEach(item => {
                             finalSchedule[item.course.id] = { sectionId: item.sectionId };
                         });
-                        validSchedules.push(finalSchedule);
+                        tempSchedules.push(finalSchedule);
                     }
                     return;
                 }
@@ -144,27 +165,34 @@ export function generateSchedules(allCourses: Course[]): GenerationResult {
                     findSchedulesRecursive(courseIndex + 1, [...currentSelection, { course, sectionId: section.id }]);
                 }
             }
-
+            
             findSchedulesRecursive(0, []);
 
-            if (validSchedules.length > 0) {
-                bestSchedules.push(...validSchedules);
-                successfulCombo = combo;
+            if (tempSchedules.length > 0) {
+                bestSchedules = [...bestSchedules, ...tempSchedules];
             }
         }
         
         if (bestSchedules.length > 0) {
+            const successfulCombo = allCourses.filter(c => 
+                bestSchedules[0].hasOwnProperty(c.id)
+            );
             excludedCourses = allCourses.filter(c => !successfulCombo.some(included => included.id === c.id));
-            break;
+            
+            // Find a representative conflict that includes at least one excluded course
+            if (excludedCourses.length > 0) {
+                const potentialConflictSet = [...successfulCombo, excludedCourses[0]];
+                 const sectionsToTest = potentialConflictSet.map(c => ({ course: c, sectionId: c.sections[0].id }));
+                 conflicts = getScheduleConflicts(sectionsToTest, allCourses);
+            }
+            break; 
         }
     }
     
-    const conflicts: Conflict[] = [];
     if (bestSchedules.length === 0 && allCourses.length > 0) {
         const sectionsToTest = allCourses.map(c => ({ course: c, sectionId: c.sections[0].id }));
-        conflicts.push(...getScheduleConflicts(sectionsToTest));
+        conflicts = getScheduleConflicts(sectionsToTest, allCourses);
     }
-
 
     const scoredSchedules = bestSchedules.map(schedule => {
         const selection = Object.keys(schedule).map(courseId => {
@@ -173,12 +201,13 @@ export function generateSchedules(allCourses: Course[]): GenerationResult {
         });
         return { schedule, score: calculateGapScore(selection) };
     }).sort((a, b) => a.score - b.score);
-
-    const uniqueSchedules = [...new Set(scoredSchedules.map(s => JSON.stringify(s.schedule)))].map(s => JSON.parse(s));
+    
+    // Limit to 20 best schedules to avoid performance issues
+    const uniqueSchedules = [...new Set(scoredSchedules.map(s => JSON.stringify(s.schedule)))].slice(0, 20).map(s => JSON.parse(s));
 
     return {
         schedules: uniqueSchedules,
-        conflicts: conflicts,
+        conflicts: conflicts.slice(0, 1), // Return only the first detected conflict for clarity
         excludedCourses,
     };
 }
