@@ -22,22 +22,12 @@ export default function SchedulePage() {
   
   const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [excludedCourse, setExcludedCourse] = useState<Course | null>(null);
+  const [excludedCourses, setExcludedCourses] = useState<Course[]>([]);
+  const [includedCourses, setIncludedCourses] = useState<Course[]>([]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    setIsMounted(true);
-    const savedCourses = localStorage.getItem('courses');
-    if (savedCourses) {
-      const parsedCourses: Course[] = JSON.parse(savedCourses);
-      setCourses(parsedCourses);
-    } else {
-        setIsLoading(false);
-    }
-  }, []);
 
   const runScheduler = useCallback(async () => {
     if (courses.length === 0) {
@@ -47,29 +37,50 @@ export default function SchedulePage() {
 
     setIsLoading(true);
     setAiSuggestions(null);
-    setExcludedCourse(null);
+    setExcludedCourses([]);
+    setIncludedCourses(courses);
     
     setTimeout(async () => {
-      let generated = generateSchedules(courses, lockedSections);
+      // Attempt to generate with all courses first
+      let generatedSchedules = generateSchedules(courses, lockedSections);
+      let bestSchedules = generatedSchedules;
+      let finalIncludedCourses = courses;
 
-      // If no schedule, try removing one course at a time, starting from the last added one.
-      if (generated.length === 0 && courses.length > 1) {
-        for (let i = courses.length - 1; i >= 0; i--) {
-          const courseToExclude = courses[i];
-          const coursesToTry = courses.filter(c => c.id !== courseToExclude.id);
+      // If no schedule with all courses, try removing one at a time
+      if (bestSchedules.length === 0 && courses.length > 1) {
+        let maxCoursesScheduled = 0;
+        let bestPartials: Schedule[] = [];
+        let bestIncluded: Course[] = [];
+
+        // Find the best possible partial schedules
+        for (let i = 0; i < courses.length; i++) {
+          const coursesToTry = courses.filter((_, index) => index !== i);
           const partialSchedules = generateSchedules(coursesToTry, lockedSections);
+
           if (partialSchedules.length > 0) {
-            generated = partialSchedules;
-            setExcludedCourse(courseToExclude);
-            break; // Found a working partial schedule
+             if (coursesToTry.length > maxCoursesScheduled) {
+                maxCoursesScheduled = coursesToTry.length;
+                bestPartials = partialSchedules;
+                bestIncluded = coursesToTry;
+             } else if (coursesToTry.length === maxCoursesScheduled) {
+                bestPartials.push(...partialSchedules);
+             }
           }
         }
+        bestSchedules = bestPartials;
+        finalIncludedCourses = bestIncluded;
       }
+      
+      const excluded = courses.filter(c => !finalIncludedCourses.some(ic => ic.id === c.id));
+      setExcludedCourses(excluded);
+      setIncludedCourses(finalIncludedCourses);
 
-      if (generated.length > 0) {
-        setSchedules(generated);
+
+      if (bestSchedules.length > 0) {
+        setSchedules(bestSchedules);
         setCurrentScheduleIndex(0);
       } else {
+        // No schedules found at all, even with removals. Time for AI.
         setSchedules([]);
         setIsAiLoading(true);
         try {
@@ -84,10 +95,7 @@ export default function SchedulePage() {
                 endTime: section.lecture.endTime,
                 type: 'Lecture' as const,
               };
-              if (section.lab) {
-                // This simplification might need adjustment based on AI model needs
-                 return lectureDetails;
-              }
+              // This logic could be improved to pass lab info as well
               return lectureDetails;
             }),
           }));
@@ -114,6 +122,17 @@ export default function SchedulePage() {
     }
   }, [courses, isMounted, runScheduler]);
 
+  useEffect(() => {
+    setIsMounted(true);
+    const savedCourses = localStorage.getItem('courses');
+    if (savedCourses) {
+      const parsedCourses: Course[] = JSON.parse(savedCourses);
+      setCourses(parsedCourses);
+    } else {
+        setIsLoading(false);
+    }
+  }, []);
+
   const currentSchedule = useMemo(() => schedules[currentScheduleIndex], [schedules, currentScheduleIndex]);
 
   const handleLockSection = (courseId: string, sectionId: string) => {
@@ -136,7 +155,6 @@ export default function SchedulePage() {
     }
     
     if (schedules.length > 0 && currentSchedule) {
-      const displayCourses = excludedCourse ? courses.filter(c => c.id !== excludedCourse.id) : courses;
       return (
         <>
           <ScheduleControls
@@ -144,20 +162,20 @@ export default function SchedulePage() {
             total={schedules.length}
             onNext={() => setCurrentScheduleIndex(i => (i + 1) % schedules.length)}
             onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
-            onRegenerate={runScheduler}
+            onShowAlternatives={() => { /* This can be used for more complex alternative views later */ }}
             disableSemesterSplit={true}
           />
-           {excludedCourse && (
+           {excludedCourses.length > 0 && (
             <Alert className="mt-4 border-primary/50 text-primary-foreground">
               <Info className="h-4 w-4" />
               <AlertTitle>Partial Schedule Generated</AlertTitle>
               <AlertDescription>
-                We couldn't fit all your courses. The schedule below works by excluding <strong>{excludedCourse.name}</strong>.
+                We couldn't fit all your courses. The schedule below works by excluding: <strong>{excludedCourses.map(c => c.name).join(', ')}</strong>.
               </AlertDescription>
             </Alert>
           )}
           <ScheduleView
-            courses={displayCourses}
+            courses={includedCourses}
             schedule={currentSchedule}
             lockedSections={lockedSections}
             onLockToggle={handleLockSection}
@@ -212,3 +230,5 @@ export default function SchedulePage() {
     </div>
   );
 }
+
+    
