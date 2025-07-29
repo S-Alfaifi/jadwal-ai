@@ -4,7 +4,7 @@
 import React from 'react';
 import type { Course, Schedule, Section, Day, LayoutDirection } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface ScheduleViewProps {
@@ -17,7 +17,7 @@ interface ScheduleViewProps {
 }
 
 const START_HOUR = 8;
-const END_HOUR = 17;
+const END_HOUR = 17; // Represents the end of the 16:00 hour, so up to 17:00
 const timeSlots = Array.from({ length: (END_HOUR - START_HOUR) * 2 + 1 }, (_, i) => {
   const hour = START_HOUR + Math.floor(i / 2);
   const minute = i % 2 === 0 ? '00' : '30';
@@ -44,7 +44,7 @@ const ScheduledItem = ({ course, section }: { course: Course, section: Section }
       return (
         <div
           key={`${course.id}-${section.id}-${day}-${type}`}
-          className="rounded-lg p-2 flex flex-col justify-between relative overflow-hidden text-white"
+          className="rounded-lg p-2 flex flex-col justify-between relative overflow-hidden text-black"
           style={{
             gridColumnStart: dayIndex + 2,
             gridRow: `${startPos + 2} / ${endPos + 2}`,
@@ -56,7 +56,7 @@ const ScheduledItem = ({ course, section }: { course: Course, section: Section }
             <p className="text-xs text-black/70">{section.name}</p>
             <p className="text-xs text-black/70 font-semibold">{type}</p>
           </div>
-          <div className="text-xs text-black/60">
+          <div className="text-xs text-black/60 font-mono">
             {time.startTime} - {time.endTime}
           </div>
         </div>
@@ -97,20 +97,20 @@ const HorizontalLayout = ({ scheduledItems }: { scheduledItems: { course: Course
   const timeLabels = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
 
   return (
-    <div className="grid grid-rows-[auto_repeat(5,1fr)] grid-cols-[auto,1fr] gap-px bg-border rounded-lg overflow-hidden border">
+    <div className="grid grid-rows-[auto_repeat(5,1fr)] grid-cols-[auto_1fr] gap-px bg-border rounded-lg overflow-hidden border">
         {/* Corner */}
         <div className="bg-card p-2 row-start-1 col-start-1"></div>
 
         {/* Time Headers */}
         <div className="bg-card p-2 row-start-1 col-start-2 grid" style={{ gridTemplateColumns: `repeat(${numTimeSlots}, 1fr)` }}>
             {timeLabels.map(hour => (
-                <div key={hour} className="col-span-2 text-center text-xs font-medium text-muted-foreground">{`${hour}:00`}</div>
+                <div key={hour} className="col-span-2 text-center text-xs font-medium text-muted-foreground -ml-4">{`${hour}:00`}</div>
             ))}
         </div>
 
         {/* Day Headers */}
         {ALL_DAYS.map((day, dayIndex) => (
-            <div key={day} className="bg-card text-center font-bold p-4 text-primary-foreground row-start-${dayIndex + 2} col-start-1">{day}</div>
+            <div key={day} className="bg-card text-center font-bold p-4 text-primary-foreground flex items-center justify-center">{day}</div>
         ))}
         
         {/* Grid Content */}
@@ -120,44 +120,42 @@ const HorizontalLayout = ({ scheduledItems }: { scheduledItems: { course: Course
                 <div key={`h-line-${i}`} className="col-span-full h-px bg-border absolute w-full" style={{ top: `calc(${(100/5) * (i+1)}%)` }} />
             ))}
             {/* Vertical lines */}
-            {Array.from({length: numTimeSlots - 1}, (_, i) => (
-                 <div key={`v-line-${i}`} className="row-span-full w-px bg-border absolute h-full" style={{ left: `calc(${(100/numTimeSlots) * (i+1)}%)` }} />
+            {Array.from({length: numTimeSlots}, (_, i) => (
+                 <div key={`v-line-${i}`} className={cn("row-span-full w-px absolute h-full", i % 2 === 0 ? "bg-border" : "bg-border/50")} style={{ left: `calc(${(100/numTimeSlots) * i}%)` }} />
             ))}
 
             {/* Scheduled Items */}
-            {scheduledItems.map(({ course, section }) => {
-                const events = [];
-                if(section.lecture) events.push({type: 'Lecture', time: section.lecture});
-                if(section.lab) events.push({type: 'Lab', time: section.lab});
+            <div className="row-start-1 row-span-5 col-start-1 col-span-full grid grid-rows-5 grid-cols-18 h-full p-1 gap-1">
+                {scheduledItems.map(({ course, section }) => {
+                    const events = [];
+                    if(section.lecture) events.push({type: 'Lecture', time: section.lecture});
+                    if(section.lab) events.push({type: 'Lab', time: section.lab});
 
-                return events.map(({ type, time }) => {
-                    return time.days.map(day => {
-                        const dayIndex = ALL_DAYS.indexOf(day);
-                        const startPos = timeToPosition(time.startTime);
-                        const endPos = timeToPosition(time.endTime);
+                    return events.map(({ type, time }) => {
+                        return time.days.map(day => {
+                            const dayIndex = ALL_DAYS.indexOf(day);
+                            const startPos = timeToPosition(time.startTime);
+                            const endPos = timeToPosition(time.endTime);
 
-                        return (
-                          <div
-                            key={`${course.id}-${section.id}-${day}-${type}`}
-                            className="rounded-lg p-2 flex flex-col justify-between relative overflow-hidden text-white"
-                            style={{ 
-                              gridRowStart: dayIndex + 1,
-                              gridColumn: `${startPos + 1} / ${endPos + 1}`,
-                              backgroundColor: course.color,
-                            }}
-                          >
-                            <div>
-                              <p className="font-bold text-sm text-black/80">{course.name}</p>
-                              <p className="text-xs text-black/70">{section.name} ({type})</p>
-                            </div>
-                            <div className="text-xs text-black/60">
-                              {time.startTime}-{time.endTime}
-                            </div>
-                          </div>
-                        );
+                            return (
+                              <div
+                                key={`${course.id}-${section.id}-${day}-${type}`}
+                                className="rounded-md p-2 flex flex-col justify-center relative overflow-hidden text-black shadow-sm"
+                                style={{ 
+                                  gridRowStart: dayIndex + 1,
+                                  gridColumn: `${startPos + 1} / ${endPos + 1}`,
+                                  backgroundColor: course.color,
+                                }}
+                              >
+                                <p className="font-bold text-sm text-black/80 leading-tight">{course.name}</p>
+                                <p className="text-xs text-black/70">{section.name} ({type})</p>
+                                <p className="text-xs text-black/60 font-mono mt-1">{time.startTime}-{time.endTime}</p>
+                              </div>
+                            );
+                        })
                     })
-                })
-            })}
+                })}
+            </div>
         </div>
     </div>
   );
@@ -213,3 +211,27 @@ export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
     </div>
   );
 }
+
+// Add this to your tailwind.config.ts `extend` block if not present
+// gridColumn: {
+//   'span-18': 'span 18 / span 18',
+//   '1 / 19': '1 / 19',
+//    ... other values you might need
+// },
+// and in `safelist` if you use dynamic class names
+// { pattern: /grid-cols-18/ },
+// { pattern: /col-start-(d+)/ },
+// { pattern: /col-end-(d+)/ },
+// { pattern: /grid-rows-5/ },
+// { pattern: /row-start-(d+)/ },
+// For this example I will define it in the component itself to avoid config changes.
+const HorizontalLayoutGrid = ({ children }: { children: React.ReactNode }) => (
+    <div className="grid grid-rows-5 grid-cols-[repeat(18,minmax(0,1fr))] h-full p-1 gap-1">
+        {children}
+    </div>
+)
+Object.assign(HorizontalLayoutGrid, {
+    displayName: 'HorizontalLayoutGrid',
+});
+
+    
