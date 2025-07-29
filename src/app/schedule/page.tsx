@@ -130,7 +130,7 @@ export default function SchedulePage() {
                 paddingTop: '20px',
                 paddingLeft: '20px',
                 paddingRight: '20px',
-                paddingBottom: '22px'
+                paddingBottom: '24px'
             } 
         });
         const link = document.createElement('a');
