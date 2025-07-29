@@ -4,15 +4,19 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, ArrowLeft, Info } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, Info, Rows3, Columns3, RefreshCw } from 'lucide-react';
 import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
-import { AiSuggestions } from '@/components/ai-suggestions';
 import { Logo } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Course, Schedule } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
-import { suggestScheduleWorkarounds } from '@/ai/flows/suggest-schedule-workarounds';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -20,13 +24,29 @@ export default function SchedulePage() {
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
   const [lockedSections, setLockedSections] = useState<Record<string, string>>({});
   
-  const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [excludedCourses, setExcludedCourses] = useState<Course[]>([]);
-  
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
+
+  const getCombinations = <T,>(array: T[], size: number): T[][] => {
+    const result: T[][] = [];
+    function combinationUtil(start: number, chosen: T[]) {
+      if (chosen.length === size) {
+        result.push([...chosen]);
+        return;
+      }
+      if (start >= array.length) {
+        return;
+      }
+      chosen.push(array[start]);
+      combinationUtil(start + 1, chosen);
+      chosen.pop();
+      combinationUtil(start + 1, chosen);
+    }
+    combinationUtil(0, []);
+    return result;
+  };
+
 
   const runScheduler = useCallback(async () => {
     if (courses.length === 0) {
@@ -36,71 +56,40 @@ export default function SchedulePage() {
 
     setIsLoading(true);
     setCurrentScheduleIndex(0);
-    setAiSuggestions(null);
-    setExcludedCourses([]);
     
-    setTimeout(async () => {
-      // Attempt to generate with all courses first
-      let generatedSchedules = generateSchedules(courses, lockedSections);
-      
-      // If no schedule with all courses, try removing one at a time
-      if (generatedSchedules.length === 0 && courses.length > 1) {
-          let bestPartials: Schedule[] = [];
-          let maxCoursesScheduled = 0;
+    // Using a timeout to ensure UI updates before heavy computation
+    setTimeout(() => {
+        let generatedSchedules: Schedule[] = [];
 
-          // Find the maximum number of courses we can schedule together
-          for (let i = 0; i < courses.length; i++) {
-              const coursesToTry = courses.slice(0, i).concat(courses.slice(i + 1));
-              if (coursesToTry.length < maxCoursesScheduled) continue;
-              
-              const partialSchedules = generateSchedules(coursesToTry, lockedSections);
-              if (partialSchedules.length > 0) {
-                  if (coursesToTry.length > maxCoursesScheduled) {
-                      maxCoursesScheduled = coursesToTry.length;
-                      bestPartials = []; // Reset if we find a new max
-                  }
-                  if(coursesToTry.length === maxCoursesScheduled) {
-                    bestPartials.push(...partialSchedules);
-                  }
-              }
-          }
+        // Try with all courses first
+        generatedSchedules = generateSchedules(courses, lockedSections);
 
-          if (bestPartials.length > 0) {
-              generatedSchedules = [...new Set(bestPartials.map(s => JSON.stringify(s)))].map(s => JSON.parse(s));
-          }
-      }
-      
-      if (generatedSchedules.length > 0) {
-        setSchedules(generatedSchedules);
-        setCurrentScheduleIndex(0);
-      } else {
-        // No schedules found at all, even with removals. Time for AI.
-        setSchedules([]);
-        setIsAiLoading(true);
-        try {
-          const formattedCoursesForAI = courses.map(course => ({
-            name: course.name,
-            sections: course.sections.map(section => ({
-              id: section.id,
-              name: section.name,
-              days: section.lecture.days,
-              startTime: section.lecture.startTime,
-              endTime: section.lecture.endTime,
-              type: 'Lecture' as const,
-              // Note: Lab data is not passed to AI for simplicity.
-            })),
-          }));
-
-          const result = await suggestScheduleWorkarounds({ courses: formattedCoursesForAI });
-          setAiSuggestions(result.suggestions);
-        } catch (error) {
-          console.error("AI suggestion failed:", error);
-          setAiSuggestions(["Could not fetch AI suggestions at this time."]);
-        } finally {
-          setIsAiLoading(false);
+        // If no schedule, try removing courses one by one
+        if (generatedSchedules.length === 0) {
+            for (let i = courses.length - 1; i >= 1; i--) {
+                const courseCombinations = getCombinations(courses, i);
+                for (const combo of courseCombinations) {
+                    const partialSchedules = generateSchedules(combo, lockedSections);
+                    if (partialSchedules.length > 0) {
+                        generatedSchedules.push(...partialSchedules);
+                    }
+                }
+                // If we found any schedules at this level, we stop.
+                if (generatedSchedules.length > 0) {
+                    break;
+                }
+            }
         }
-      }
-      setIsLoading(false);
+
+        if (generatedSchedules.length > 0) {
+            // Remove duplicate schedules that might have been generated
+            const uniqueSchedules = [...new Set(generatedSchedules.map(s => JSON.stringify(s)))].map(s => JSON.parse(s));
+            setSchedules(uniqueSchedules);
+        } else {
+            setSchedules([]); // No schedule possible at all
+        }
+        
+        setIsLoading(false);
     }, 50);
   }, [courses, lockedSections]);
 
@@ -167,6 +156,7 @@ export default function SchedulePage() {
             total={schedules.length}
             onNext={() => setCurrentScheduleIndex(i => (i + 1) % schedules.length)}
             onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
+            onRegenerate={runScheduler}
           />
            {excludedCoursesInSchedule.length > 0 && (
             <Alert className="mt-4 border-primary/50 text-primary-foreground">
@@ -183,22 +173,10 @@ export default function SchedulePage() {
             lockedSections={lockedSections}
             onLockToggle={handleLockSection}
             onSectionChange={handleSectionChange}
+            layout="horizontal"
           />
         </>
       );
-    }
-
-    if (isAiLoading) {
-      return (
-        <div className="flex items-center justify-center min-h-[60vh] flex-col">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="mt-4 text-lg text-muted-foreground">No conflict-free schedules found. Consulting AI for workarounds...</p>
-        </div>
-      );
-    }
-
-    if (aiSuggestions) {
-      return <AiSuggestions suggestions={aiSuggestions} onBack={() => router.push('/')} />;
     }
 
     return (
@@ -206,7 +184,7 @@ export default function SchedulePage() {
         <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
         <h3 className="mt-4 text-xl font-bold text-primary-foreground">No Conflict-Free Schedule Found</h3>
         <p className="mt-2 text-base text-muted-foreground">
-          We couldn't generate a schedule with the provided courses, even after attempting to remove one course.
+          We couldn't generate any possible schedule with the courses you provided.
         </p>
         <Button onClick={() => router.push('/')} className="mt-6">
           Go Back and Edit Courses
@@ -228,7 +206,9 @@ export default function SchedulePage() {
       </header>
 
       <main className="flex-grow container mx-auto p-4 md:p-8">
-        {renderContent()}
+        <TooltipProvider>
+          {renderContent()}
+        </TooltipProvider>
       </main>
     </div>
   );
