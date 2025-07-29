@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'ScheduleZen',
+  title: 'Jadwal.Ai',
   description: 'An intelligent, user-friendly application that helps university students generate conflict-free class schedules.',
 };
 
