@@ -19,10 +19,6 @@ const timeToMinutes = (time: string): number => {
   return h * 60 + m;
 };
 
-const minutesToHour = (minutes: number): number => {
-    return Math.floor(minutes / 60);
-}
-
 interface PositionedEvent {
     course: Course;
     section: Section;
@@ -123,8 +119,8 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                 return (
                     <React.Fragment key={day}>
                         {/* Day Header */}
-                         <div className="bg-card text-right text-sm p-2 font-bold text-primary-foreground sticky left-0 z-20 border-l border-t flex items-center justify-center" style={{ gridRow: `${dayRowStart} / span ${trackCount}` }}>
-                            <span className="-rotate-90 whitespace-nowrap">{day}</span>
+                         <div className="bg-card text-sm p-2 font-bold text-primary-foreground sticky left-0 z-20 border-l border-t flex items-center justify-center" style={{ gridRow: `${dayRowStart} / span ${trackCount}` }}>
+                           {day}
                         </div>
 
                         {/* Grid area for the day */}
@@ -214,11 +210,6 @@ export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
     // Add padding
     startH = Math.max(0, startH - 1);
     endH = Math.min(24, endH + 1);
-
-    if (endH - startH < 4) {
-      endH = startH + 4;
-    }
-    if (endH > 24) endH = 24;
 
     return {startHour: startH, endHour: endH};
   }, [scheduledItems]);
