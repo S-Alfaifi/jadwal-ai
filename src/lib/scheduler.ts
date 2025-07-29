@@ -117,17 +117,21 @@ const getCombinations = <T,>(array: T[], size: number): T[][] => {
         return [];
     }
     const result: T[][] = [];
+    const n = array.length;
     function combinationUtil(start: number, chosen: T[]) {
-      if (chosen.length === size) {
-        result.push([...chosen]);
-        return;
-      }
-      if (start >= array.length) return;
-      
-      chosen.push(array[start]);
-      combinationUtil(start + 1, chosen);
-      chosen.pop();
-      combinationUtil(start + 1, chosen);
+        if (chosen.length === size) {
+            result.push([...chosen]);
+            return;
+        }
+        if (start >= n) {
+            return;
+        }
+        // Include current element
+        chosen.push(array[start]);
+        combinationUtil(start + 1, chosen);
+        chosen.pop();
+        // Exclude current element
+        combinationUtil(start + 1, chosen);
     }
     combinationUtil(0, []);
     return result;
@@ -174,22 +178,26 @@ export function generateSchedules(allCourses: Course[]): GenerationResult {
         }
         
         if (bestSchedules.length > 0) {
-            const successfulCombo = allCourses.filter(c => 
-                bestSchedules[0].hasOwnProperty(c.id)
-            );
-            excludedCourses = allCourses.filter(c => !successfulCombo.some(included => included.id === c.id));
+            const includedCourseIds = new Set(Object.keys(bestSchedules[0]));
+            const coursesInSchedule = allCourses.filter(c => includedCourseIds.has(c.id));
+            excludedCourses = allCourses.filter(c => !includedCourseIds.has(c.id));
             
-            // Find a representative conflict that includes at least one excluded course
             if (excludedCourses.length > 0) {
-                const potentialConflictSet = [...successfulCombo, excludedCourses[0]];
-                 const sectionsToTest = potentialConflictSet.map(c => ({ course: c, sectionId: c.sections[0].id }));
-                 conflicts = getScheduleConflicts(sectionsToTest, allCourses);
+                for (const excluded of excludedCourses) {
+                    const potentialConflictSet = [...coursesInSchedule, excluded];
+                    const sectionsToTest = potentialConflictSet.map(c => ({ course: c, sectionId: c.sections[0].id }));
+                    const potentialConflicts = getScheduleConflicts(sectionsToTest, allCourses);
+                    if(potentialConflicts.length > 0) {
+                        conflicts = potentialConflicts;
+                        break;
+                    }
+                }
             }
             break; 
         }
     }
     
-    if (bestSchedules.length === 0 && allCourses.length > 0) {
+    if (bestSchedules.length === 0 && allCourses.length > 1) {
         const sectionsToTest = allCourses.map(c => ({ course: c, sectionId: c.sections[0].id }));
         conflicts = getScheduleConflicts(sectionsToTest, allCourses);
     }
@@ -202,12 +210,11 @@ export function generateSchedules(allCourses: Course[]): GenerationResult {
         return { schedule, score: calculateGapScore(selection) };
     }).sort((a, b) => a.score - b.score);
     
-    // Limit to 20 best schedules to avoid performance issues
     const uniqueSchedules = [...new Set(scoredSchedules.map(s => JSON.stringify(s.schedule)))].slice(0, 20).map(s => JSON.parse(s));
 
     return {
         schedules: uniqueSchedules,
-        conflicts: conflicts.slice(0, 1), // Return only the first detected conflict for clarity
+        conflicts: conflicts.slice(0, 1),
         excludedCourses,
     };
 }
