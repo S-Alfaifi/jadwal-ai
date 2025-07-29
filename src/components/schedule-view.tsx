@@ -211,7 +211,7 @@ export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
     const startH = Math.floor(minMinute/60);
     const endH = Math.ceil(maxMinute/60);
 
-    return {startHour: startH, endHour: Math.max(endH, startH + 1)};
+    return {startHour: startH, endHour: endH};
   }, [scheduledItems]);
 
   const renderSummary = () => (
