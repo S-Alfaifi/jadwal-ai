@@ -1,13 +1,15 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, Info } from 'lucide-react';
 import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
 import { AiSuggestions } from '@/components/ai-suggestions';
 import { Logo } from '@/components/logo';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Course, Schedule } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { suggestScheduleWorkarounds } from '@/ai/flows/suggest-schedule-workarounds';
@@ -20,6 +22,7 @@ export default function SchedulePage() {
   
   const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [excludedCourse, setExcludedCourse] = useState<Course | null>(null);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -44,10 +47,23 @@ export default function SchedulePage() {
 
     setIsLoading(true);
     setAiSuggestions(null);
+    setExcludedCourse(null);
     
-    // Use a timeout to allow the loading state to render before the heavy computation
     setTimeout(async () => {
-      const generated = generateSchedules(courses, lockedSections);
+      let generated = generateSchedules(courses, lockedSections);
+
+      // If no schedule, try removing one course at a time
+      if (generated.length === 0 && courses.length > 1) {
+        for (let i = 0; i < courses.length; i++) {
+          const courseToExclude = courses[i];
+          const coursesToTry = courses.filter(c => c.id !== courseToExclude.id);
+          generated = generateSchedules(coursesToTry, lockedSections);
+          if (generated.length > 0) {
+            setExcludedCourse(courseToExclude);
+            break; // Found a working partial schedule
+          }
+        }
+      }
 
       if (generated.length > 0) {
         setSchedules(generated);
@@ -56,13 +72,13 @@ export default function SchedulePage() {
       } else {
         setSchedules([]);
         setIsAiLoading(true);
-        setIsLoading(false); // Stop main loader, start AI loader
+        setIsLoading(false);
         try {
           const formattedCoursesForAI = courses.map(course => ({
             name: course.name,
             sections: course.sections.map(section => ({
               ...section,
-              type: 'Lecture' as const, // Simplified for AI
+              type: (section.lab ? 'Lecture, Lab' : 'Lecture') as any, // Simplified for AI
               days: section.lecture.days.map(d => d as 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu'),
               startTime: section.lecture.startTime,
               endTime: section.lecture.endTime,
@@ -78,7 +94,7 @@ export default function SchedulePage() {
           setIsAiLoading(false);
         }
       }
-    }, 50); // 50ms timeout
+    }, 50);
   }, [courses, lockedSections]);
 
   useEffect(() => {
@@ -111,6 +127,7 @@ export default function SchedulePage() {
     }
     
     if (schedules.length > 0 && currentSchedule) {
+      const displayCourses = excludedCourse ? courses.filter(c => c.id !== excludedCourse.id) : courses;
       return (
         <>
           <ScheduleControls
@@ -121,8 +138,17 @@ export default function SchedulePage() {
             onRegenerate={runScheduler}
             disableSemesterSplit={true}
           />
+           {excludedCourse && (
+            <Alert className="mt-4 border-primary/50 text-primary-foreground">
+              <Info className="h-4 w-4" />
+              <AlertTitle>Partial Schedule Generated</AlertTitle>
+              <AlertDescription>
+                We couldn't fit all your courses. The schedule below works by excluding <strong>{excludedCourse.name}</strong>.
+              </AlertDescription>
+            </Alert>
+          )}
           <ScheduleView
-            courses={courses}
+            courses={displayCourses}
             schedule={currentSchedule}
             lockedSections={lockedSections}
             onLockToggle={handleLockSection}
@@ -150,7 +176,7 @@ export default function SchedulePage() {
         <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
         <h3 className="mt-4 text-xl font-bold text-primary-foreground">No Conflict-Free Schedule Found</h3>
         <p className="mt-2 text-base text-muted-foreground">
-          We couldn't generate a schedule with the provided courses. Try removing a course or adjusting sections.
+          We couldn't generate a schedule with the provided courses, even after attempting to remove one course.
         </p>
         <Button onClick={() => router.push('/')} className="mt-6">
           Go Back and Edit Courses
