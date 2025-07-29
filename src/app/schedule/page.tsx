@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
@@ -8,7 +8,7 @@ import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
 import { AiSuggestions } from '@/components/ai-suggestions';
 import { Logo } from '@/components/logo';
-import type { Course, Schedule, Section } from '@/lib/types';
+import type { Course, Schedule } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { suggestScheduleWorkarounds } from '@/ai/flows/suggest-schedule-workarounds';
 
@@ -36,51 +36,128 @@ export default function SchedulePage() {
     }
   }, []);
 
+  const runScheduler = useCallback(async () => {
+    if (courses.length === 0) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setAiSuggestions(null);
+    
+    // Use a timeout to allow the loading state to render before the heavy computation
+    setTimeout(async () => {
+      const generated = generateSchedules(courses, lockedSections);
+
+      if (generated.length > 0) {
+        setSchedules(generated);
+        setCurrentScheduleIndex(0);
+        setIsLoading(false);
+      } else {
+        setSchedules([]);
+        setIsAiLoading(true);
+        setIsLoading(false); // Stop main loader, start AI loader
+        try {
+          const formattedCoursesForAI = courses.map(course => ({
+            name: course.name,
+            sections: course.sections.map(section => ({
+              ...section,
+              type: 'Lecture' as const, // Simplified for AI
+              days: section.lecture.days.map(d => d as 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu'),
+              startTime: section.lecture.startTime,
+              endTime: section.lecture.endTime,
+            }))
+          }));
+          
+          const result = await suggestScheduleWorkarounds({ courses: formattedCoursesForAI });
+          setAiSuggestions(result.suggestions);
+        } catch (error) {
+          console.error("AI suggestion failed:", error);
+          setAiSuggestions(["Could not fetch AI suggestions at this time."]);
+        } finally {
+          setIsAiLoading(false);
+        }
+      }
+    }, 50); // 50ms timeout
+  }, [courses, lockedSections]);
+
   useEffect(() => {
     if (isMounted && courses.length > 0) {
       runScheduler();
+    } else if (isMounted) {
+      setIsLoading(false);
     }
-  }, [courses, isMounted]);
+  }, [courses, isMounted, runScheduler]);
 
-  const runScheduler = async () => {
-    setIsLoading(true);
-    setAiSuggestions(null);
-    const generated = generateSchedules(courses, lockedSections);
-
-    if (generated.length > 0) {
-      setSchedules(generated);
-      setCurrentScheduleIndex(0);
-    } else {
-      setSchedules([]);
-      setIsAiLoading(true);
-      try {
-        const formattedCourses = courses.flatMap(c => 
-            c.sections.map(s => ({
-                name: `${c.name} - ${s.name}`,
-                sections: [
-                    { ...s.lecture, type: 'Lecture' as const, days: s.lecture.days.map(d => d as 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu') },
-                    ...(s.lab ? [{ ...s.lab, type: 'Lab' as const, days: s.lab.days.map(d => d as 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu') }] : [])
-                ]
-            }))
-        );
-        const result = await suggestScheduleWorkarounds({ courses: formattedCourses });
-        setAiSuggestions(result.suggestions);
-      } catch (error) {
-        console.error("AI suggestion failed:", error);
-        setAiSuggestions(["Could not fetch AI suggestions at this time."]);
-      } finally {
-        setIsAiLoading(false);
-      }
-    }
-    setIsLoading(false);
-  };
-  
   const currentSchedule = useMemo(() => schedules[currentScheduleIndex], [schedules, currentScheduleIndex]);
 
-  const handleLockSection = (courseId: string, sectionId: string) => {};
-  const handleSectionChange = (courseId: string, newSectionId: string) => {};
+  const handleLockSection = (courseId: string, sectionId: string) => {
+    // This functionality is currently disabled in the UI but the handler is here for future use.
+  };
+  const handleSectionChange = (courseId: string, newSectionId: string) => {
+    // This functionality is currently disabled in the UI but the handler is here for future use.
+  };
 
   if (!isMounted) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-[60vh] flex-col">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="mt-4 text-lg text-muted-foreground">Generating optimal schedules...</p>
+        </div>
+      );
+    }
+    
+    if (schedules.length > 0 && currentSchedule) {
+      return (
+        <>
+          <ScheduleControls
+            current={currentScheduleIndex + 1}
+            total={schedules.length}
+            onNext={() => setCurrentScheduleIndex(i => (i + 1) % schedules.length)}
+            onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
+            onRegenerate={runScheduler}
+            disableSemesterSplit={true}
+          />
+          <ScheduleView
+            courses={courses}
+            schedule={currentSchedule}
+            lockedSections={lockedSections}
+            onLockToggle={handleLockSection}
+            onSectionChange={handleSectionChange}
+          />
+        </>
+      );
+    }
+
+    if (isAiLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-[60vh] flex-col">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="mt-4 text-lg text-muted-foreground">No conflict-free schedules found. Consulting AI for workarounds...</p>
+        </div>
+      );
+    }
+
+    if (aiSuggestions) {
+      return <AiSuggestions suggestions={aiSuggestions} onBack={() => router.push('/')} />;
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center text-center py-16 px-8 bg-card rounded-lg border-2 border-dashed min-h-[60vh]">
+        <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
+        <h3 className="mt-4 text-xl font-bold text-primary-foreground">No Conflict-Free Schedule Found</h3>
+        <p className="mt-2 text-base text-muted-foreground">
+          We couldn't generate a schedule with the provided courses. Try removing a course or adjusting sections.
+        </p>
+        <Button onClick={() => router.push('/')} className="mt-6">
+          Go Back and Edit Courses
+        </Button>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -95,51 +172,7 @@ export default function SchedulePage() {
       </header>
 
       <main className="flex-grow container mx-auto p-4 md:p-8">
-        {isLoading ? (
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-4 text-lg text-muted-foreground">Generating schedules...</p>
-          </div>
-        ) : (
-          <>
-            <ScheduleControls
-              current={currentScheduleIndex + 1}
-              total={schedules.length}
-              onNext={() => setCurrentScheduleIndex(i => (i + 1) % schedules.length)}
-              onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
-              onRegenerate={runScheduler}
-              disableSemesterSplit={true}
-            />
-
-            {schedules.length > 0 && currentSchedule ? (
-              <ScheduleView
-                courses={courses}
-                schedule={currentSchedule}
-                lockedSections={lockedSections}
-                onLockToggle={handleLockSection}
-                onSectionChange={handleSectionChange}
-              />
-            ) : isAiLoading ? (
-                 <div className="flex items-center justify-center min-h-[60vh] flex-col">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="mt-4 text-lg text-muted-foreground">No direct schedules found. Consulting AI for workarounds...</p>
-                </div>
-            ) : aiSuggestions ? (
-              <AiSuggestions suggestions={aiSuggestions} />
-            ) : (
-                <div className="flex flex-col items-center justify-center text-center py-16 px-8 bg-card rounded-lg border-2 border-dashed min-h-[60vh]">
-                    <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
-                    <h3 className="mt-4 text-xl font-bold text-primary-foreground">No Schedules Found</h3>
-                    <p className="mt-2 text-base text-muted-foreground">
-                    We couldn't generate a conflict-free schedule with the provided courses and sections.
-                    </p>
-                     <Button onClick={() => router.push('/')} className="mt-6">
-                        Go Back and Edit Courses
-                    </Button>
-              </div>
-            )}
-          </>
-        )}
+        {renderContent()}
       </main>
     </div>
   );

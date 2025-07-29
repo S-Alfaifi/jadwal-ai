@@ -16,6 +16,8 @@ const SuggestScheduleWorkaroundsInputSchema = z.object({
       name: z.string().describe('The name of the course.'),
       sections: z.array(
         z.object({
+          id: z.string(),
+          name: z.string(),
           days: z
             .array(z.enum(['Sun', 'Mon', 'Tue', 'Wed', 'Thu']))
             .describe('The days of the week the section is held.'),
@@ -27,7 +29,7 @@ const SuggestScheduleWorkaroundsInputSchema = z.object({
         })
       ),
     })
-  ).describe('An array of courses with their respective sections.'),
+  ).describe('An array of courses with their respective sections. The AI should determine conflicts between these.'),
 });
 export type SuggestScheduleWorkaroundsInput = z.infer<
   typeof SuggestScheduleWorkaroundsInputSchema
@@ -36,7 +38,7 @@ export type SuggestScheduleWorkaroundsInput = z.infer<
 const SuggestScheduleWorkaroundsOutputSchema = z.object({
   suggestions: z
     .array(z.string())
-    .describe('An array of suggested workarounds to resolve schedule conflicts.'),
+    .describe('An array of suggested workarounds to resolve schedule conflicts. Be specific and actionable.'),
 });
 export type SuggestScheduleWorkaroundsOutput = z.infer<
   typeof SuggestScheduleWorkaroundsOutputSchema
@@ -52,13 +54,20 @@ const prompt = ai.definePrompt({
   name: 'suggestScheduleWorkaroundsPrompt',
   input: {schema: SuggestScheduleWorkaroundsInputSchema},
   output: {schema: SuggestScheduleWorkaroundsOutputSchema},
-  prompt: `You are an AI schedule assistant that will find workarounds for schedule conflicts.
+  prompt: `You are an expert university academic advisor. A student is having trouble creating a conflict-free class schedule.
 
-  Given the following course and section information, suggest workarounds to resolve any time conflicts, such as suggesting alternative sections, adjusting times if possible, or re-arranging courses across semesters.
+Your task is to analyze the provided list of courses and their section times to identify the core conflicts. Based on your analysis, provide a list of clear, actionable suggestions to help the student build a valid schedule.
 
-  Courses: {{{JSON.stringify(courses, null, 2)}}}
+Suggestions could include:
+- Pointing out the specific courses/sections that overlap.
+- Suggesting dropping one of the conflicting courses for a later semester.
+- Recommending looking for an alternative section for a specific course if one exists.
+- If sections are very close, mentioning that as a potential issue.
 
-  Respond with a list of suggestions. Be specific about what course or section the suggestion refers to.`,
+Here is the student's desired course list:
+{{{JSON.stringify(courses, null, 2)}}}
+
+Please provide helpful workarounds.`,
 });
 
 const suggestScheduleWorkaroundsFlow = ai.defineFlow(

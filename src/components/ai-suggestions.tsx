@@ -1,11 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Lightbulb } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Lightbulb, ArrowLeft } from "lucide-react";
 
 interface AiSuggestionsProps {
   suggestions: string[];
+  onBack: () => void;
 }
 
-export function AiSuggestions({ suggestions }: AiSuggestionsProps) {
+export function AiSuggestions({ suggestions, onBack }: AiSuggestionsProps) {
   return (
     <Card className="mt-8 bg-secondary/50">
       <CardHeader>
@@ -18,13 +20,17 @@ export function AiSuggestions({ suggestions }: AiSuggestionsProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ul className="space-y-3 list-disc pl-5">
+        <ul className="space-y-3 list-disc pl-5 mb-8">
           {suggestions.map((suggestion, index) => (
             <li key={index} className="text-muted-foreground text-base">
               {suggestion}
             </li>
           ))}
         </ul>
+        <Button onClick={onBack}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Go Back and Edit Courses
+        </Button>
       </CardContent>
     </Card>
   );
