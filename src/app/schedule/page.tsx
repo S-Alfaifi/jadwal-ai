@@ -105,29 +105,17 @@ export default function SchedulePage() {
 
 
   const handleSaveImage = useCallback(async () => {
-    if (scheduleRef.current?.scheduleGrid === null || !scheduleRef.current?.scheduleGrid) {
+    if (!scheduleRef.current?.scheduleGrid) {
       return;
     }
     
-    const element = scheduleRef.current.scheduleGrid.firstChild as HTMLElement;
-    if(!element) return;
-    
-    const clone = element.cloneNode(true) as HTMLElement;
-    
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
-    clone.style.top = '-9999px';
-    clone.style.width = `${element.scrollWidth}px`;
-    clone.style.height = `${element.scrollHeight}px`;
-    clone.style.overflow = 'visible';
-
-    document.body.appendChild(clone);
+    const element = scheduleRef.current.scheduleGrid;
 
     try {
-        const dataUrl = await toPng(clone, { 
+        const dataUrl = await toPng(element, { 
             cacheBust: true, 
             backgroundColor: '#ffffff',
-            pixelRatio: 2,
+            pixelRatio: 2, // Use a higher pixel ratio for better quality and to avoid cropping
         });
         const link = document.createElement('a');
         link.download = 'schedule.png';
@@ -135,8 +123,6 @@ export default function SchedulePage() {
         link.click();
     } catch (err) {
         console.error('Failed to save image', err);
-    } finally {
-        document.body.removeChild(clone);
     }
   }, []);
 
