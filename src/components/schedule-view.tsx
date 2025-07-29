@@ -4,7 +4,7 @@
 import React from 'react';
 import type { Course, Schedule, Section, Day, LayoutDirection } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface ScheduleViewProps {
@@ -30,7 +30,7 @@ const timeToPosition = (time: string): number => {
   return hoursFromStart * 2 + (m / 30);
 };
 
-const ScheduledItem = ({ course, section }: { course: Course, section: Section }) => {
+const ScheduledItemVertical = ({ course, section }: { course: Course, section: Section }) => {
   const events = [];
   if (section.lecture) events.push({ type: 'Lecture', time: section.lecture });
   if (section.lab) events.push({ type: 'Lab', time: section.lab });
@@ -78,56 +78,55 @@ const VerticalLayout = ({ scheduledItems }: { scheduledItems: { course: Course; 
     {timeSlots.map((time, index) => (
       <React.Fragment key={time}>
         <div className="row-start-auto col-start-1 bg-card text-right text-xs pr-2 text-muted-foreground relative -top-2">{time.endsWith('00') ? time : ''}</div>
-        {index < timeSlots.length - 1 && <div className="col-start-2 col-span-5 h-px bg-border" />}
+        {index < timeSlots.length - 1 && <div className="col-start-2 col-span-5 h-px bg-border" style={{ gridRowStart: index + 2 }} />}
       </React.Fragment>
     ))}
 
-    <div className="col-start-2 col-end-7 row-start-2 row-end-[_100_] grid grid-cols-5 grid-rows-[repeat(19,minmax(0,1fr))] relative">
+    <div className="col-start-2 col-end-7 row-start-2 row-end-[21] grid grid-cols-5 grid-rows-[repeat(18,minmax(0,1fr))] relative">
         {ALL_DAYS.slice(0, -1).map((_, i) => (
             <div key={`v-line-${i}`} className="row-span-full w-px bg-border absolute h-full" style={{ left: `calc(${(100/5) * (i+1)}%)` }} />
         ))}
-        {scheduledItems.map(item => <ScheduledItem key={item.section.id} {...item} />)}
+        {scheduledItems.map(item => <ScheduledItemVertical key={`${item.course.id}-${item.section.id}`} {...item} />)}
     </div>
   </div>
 );
 
-
 const HorizontalLayout = ({ scheduledItems }: { scheduledItems: { course: Course; section: Section; }[] }) => {
-  const numTimeSlots = (END_HOUR - START_HOUR) * 2;
-  const timeLabels = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+    const numTimeSlots = (END_HOUR - START_HOUR) * 2; // 30-min intervals
+    const timeLabels = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
 
   return (
-    <div className="grid grid-rows-[auto_repeat(5,minmax(6rem,auto))] grid-cols-[auto_1fr] gap-px bg-border rounded-lg overflow-hidden border">
+    <div className="grid grid-cols-[auto_1fr] grid-rows-[auto_repeat(5,minmax(6rem,auto))] gap-px bg-border rounded-lg overflow-hidden border">
         {/* Corner */}
-        <div className="bg-card p-2 row-start-1 col-start-1"></div>
+        <div className="bg-card row-start-1 col-start-1"></div>
 
         {/* Time Headers */}
-        <div className="bg-card p-2 row-start-1 col-start-2 grid relative" style={{ gridTemplateColumns: `repeat(${timeLabels.length -1}, 1fr)` }}>
-            {timeLabels.map((hour, index) => (
-                 <div key={hour} className="text-center text-xs font-medium text-muted-foreground" style={{ gridColumn: `${index + 1}` }}>
+        <div className="bg-card row-start-1 col-start-2 grid" style={{ gridTemplateColumns: `repeat(${numTimeSlots}, 1fr)`}}>
+            {timeLabels.map((hour) => (
+                <div key={hour} className="col-span-2 text-center text-xs font-medium text-muted-foreground pt-2 border-l border-border first:border-l-0">
                     {`${hour}:00`}
                 </div>
             ))}
         </div>
 
         {/* Day Headers */}
-        {ALL_DAYS.map((day) => (
-            <div key={day} className="bg-card text-center font-bold p-4 text-primary-foreground flex items-center justify-center">{day}</div>
+        {ALL_DAYS.map((day, dayIndex) => (
+            <div key={day} className="bg-card text-center font-bold p-4 text-primary-foreground flex items-center justify-center border-t border-border first:border-t-0" style={{ gridRowStart: dayIndex + 2 }}>{day}</div>
         ))}
         
-        {/* Grid Content */}
-        <div className="row-start-2 row-span-5 col-start-2 grid grid-rows-5 relative" >
-             {/* Horizontal lines */}
+        {/* Grid Content Area */}
+        <div className="row-start-2 row-span-5 col-start-2 grid grid-rows-5 grid-cols-1 relative">
+            {/* Horizontal Lines for Days */}
             {ALL_DAYS.slice(0, -1).map((_, i) => (
                 <div key={`h-line-${i}`} className="col-span-full h-px bg-border absolute w-full" style={{ top: `calc(${(100/5) * (i+1)}%)` }} />
             ))}
-            {/* Vertical lines */}
-            {Array.from({length: numTimeSlots}, (_, i) => (
-                 <div key={`v-line-${i}`} className={cn("row-span-full w-px absolute h-full", i % 2 === 0 ? "bg-border" : "bg-border/50")} style={{ left: `calc(${(100/numTimeSlots) * i}%)` }} />
+            {/* Vertical Lines for Time */}
+            {Array.from({length: numTimeSlots - 1}, (_, i) => (
+                 <div key={`v-line-${i}`} className={cn("row-span-full w-px absolute h-full", (i + 1) % 2 === 0 ? "bg-border" : "bg-border/50")} style={{ left: `calc(${(100/numTimeSlots) * (i + 1)}%)` }} />
             ))}
-
+            
             {/* Scheduled Items */}
-            <div className="row-start-1 row-span-5 col-start-1 col-span-1 grid h-full p-1 gap-1" style={{gridTemplateRows: 'repeat(5, 1fr)', gridTemplateColumns: `repeat(${numTimeSlots}, 1fr)`}}>
+            <div className="absolute inset-0 grid grid-rows-5 p-1 gap-1" style={{ gridTemplateColumns: `repeat(${numTimeSlots}, 1fr)`}}>
                 {scheduledItems.map(({ course, section }) => {
                     const events = [];
                     if(section.lecture) events.push({type: 'Lecture', time: section.lecture});
