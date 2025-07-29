@@ -10,7 +10,7 @@ import { ScheduleControls } from '@/components/schedule-controls';
 import { AiSuggestions } from '@/components/ai-suggestions';
 import { Logo } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { Course, Schedule } from '@/lib/types';
+import type { Course, Schedule, LayoutDirection } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { suggestScheduleWorkarounds } from '@/ai/flows/suggest-schedule-workarounds';
 
@@ -26,6 +26,7 @@ export default function SchedulePage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
+  const [layout, setLayout] = useState<LayoutDirection>('vertical');
   const router = useRouter();
 
   const runScheduler = useCallback(async () => {
@@ -42,43 +43,32 @@ export default function SchedulePage() {
     setTimeout(async () => {
       // Attempt to generate with all courses first
       let generatedSchedules = generateSchedules(courses, lockedSections);
-      let finalIncludedCourses = courses;
-
+      
       // If no schedule with all courses, try removing one at a time
       if (generatedSchedules.length === 0 && courses.length > 1) {
-        let bestPartials: Schedule[] = [];
-        let maxCoursesScheduled = 0;
-        
-        // Find the maximum number of courses we can schedule together
-        for (let i = 0; i < courses.length; i++) {
-          const coursesToTry = courses.filter((_, index) => index !== i);
-          if (coursesToTry.length < maxCoursesScheduled) continue;
-          
-          const partialSchedules = generateSchedules(coursesToTry, lockedSections);
-          if (partialSchedules.length > 0) {
-            if (coursesToTry.length > maxCoursesScheduled) {
-              maxCoursesScheduled = coursesToTry.length;
-            }
-          }
-        }
-        
-        // If we found a viable number of courses to schedule, collect all schedules of that size
-        if (maxCoursesScheduled > 0) {
-            for (let i = 0; i < courses.length; i++) {
-                 const coursesToTry = courses.filter((_, index) => index !== i);
-                 if (coursesToTry.length === maxCoursesScheduled) {
-                     const partialSchedules = generateSchedules(coursesToTry, lockedSections);
-                     bestPartials.push(...partialSchedules);
-                 }
-            }
-            // Also consider combinations of N-2, N-3 etc. if the primary N-1 fails.
-            // This logic is simplified to just N-1 for now, but could be expanded.
-        }
+          let bestPartials: Schedule[] = [];
+          let maxCoursesScheduled = 0;
 
-        if (bestPartials.length > 0) {
-            generatedSchedules = bestPartials;
-            // The included/excluded courses will vary per schedule, so we handle this in the render logic.
-        }
+          // Find the maximum number of courses we can schedule together
+          for (let i = 0; i < courses.length; i++) {
+              const coursesToTry = courses.slice(0, i).concat(courses.slice(i + 1));
+              if (coursesToTry.length < maxCoursesScheduled) continue;
+              
+              const partialSchedules = generateSchedules(coursesToTry, lockedSections);
+              if (partialSchedules.length > 0) {
+                  if (coursesToTry.length > maxCoursesScheduled) {
+                      maxCoursesScheduled = coursesToTry.length;
+                      bestPartials = []; // Reset if we find a new max
+                  }
+                  if(coursesToTry.length === maxCoursesScheduled) {
+                    bestPartials.push(...partialSchedules);
+                  }
+              }
+          }
+
+          if (bestPartials.length > 0) {
+              generatedSchedules = [...new Set(bestPartials.map(s => JSON.stringify(s)))].map(s => JSON.parse(s));
+          }
       }
       
       if (generatedSchedules.length > 0) {
@@ -122,7 +112,7 @@ export default function SchedulePage() {
     } else if (isMounted) {
       setIsLoading(false);
     }
-  }, [isMounted, runScheduler]); // Removed `courses` from dependency array to prevent re-running on every course change, relying on manual recall or initial load.
+  }, [isMounted, courses, runScheduler]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -133,7 +123,16 @@ export default function SchedulePage() {
     } else {
         setIsLoading(false);
     }
+    const savedLayout = localStorage.getItem('scheduleLayout') as LayoutDirection;
+    if (savedLayout) {
+        setLayout(savedLayout);
+    }
   }, []);
+
+  const handleLayoutChange = (newLayout: LayoutDirection) => {
+    setLayout(newLayout);
+    localStorage.setItem('scheduleLayout', newLayout);
+  };
 
   const { currentSchedule, includedCoursesInSchedule, excludedCoursesInSchedule } = useMemo(() => {
     if (!schedules || schedules.length === 0) {
@@ -177,6 +176,8 @@ export default function SchedulePage() {
             total={schedules.length}
             onNext={() => setCurrentScheduleIndex(i => (i + 1) % schedules.length)}
             onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
+            layout={layout}
+            onLayoutChange={handleLayoutChange}
           />
            {excludedCoursesInSchedule.length > 0 && (
             <Alert className="mt-4 border-primary/50 text-primary-foreground">
@@ -193,6 +194,7 @@ export default function SchedulePage() {
             lockedSections={lockedSections}
             onLockToggle={handleLockSection}
             onSectionChange={handleSectionChange}
+            layout={layout}
           />
         </>
       );
