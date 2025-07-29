@@ -1,4 +1,5 @@
-const PASTEL_COLORS = [
+
+export const PASTEL_COLORS = [
   "#A2D2FF", // Light Blue
   "#BDE0FE", // Lighter Blue
   "#FFC8DD", // Pink

@@ -126,6 +126,14 @@ export default function Home() {
       )
     );
   };
+
+  const handleUpdateCourseColor = (courseId: string, newColor: string) => {
+    setCourses(prevCourses =>
+      prevCourses.map(course =>
+        course.id === courseId ? { ...course, color: newColor } : course
+      )
+    );
+  };
   
   const handleGenerateSchedule = () => {
     const activeCourses = courses.filter(c => c.isEnabled && c.sections.some(s => s.isEnabled));
@@ -198,6 +206,7 @@ export default function Home() {
                     onDelete={() => handleDeleteCourse(course.id)}
                     onToggleCourse={handleToggleCourse}
                     onToggleSection={handleToggleSection}
+                    onUpdateCourseColor={handleUpdateCourseColor}
                   />
                 ))
               ) : (

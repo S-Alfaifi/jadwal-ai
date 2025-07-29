@@ -9,6 +9,8 @@ import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { PASTEL_COLORS } from "@/lib/colors";
 
 interface CourseCardProps {
   course: Course;
@@ -16,6 +18,7 @@ interface CourseCardProps {
   onDelete: () => void;
   onToggleCourse: (courseId: string, isEnabled: boolean) => void;
   onToggleSection: (courseId: string, sectionId: string, isEnabled: boolean) => void;
+  onUpdateCourseColor: (courseId: string, newColor: string) => void;
 }
 
 const SectionTimeDisplay = ({ sectionTime, type }: { sectionTime: SectionTime, type: 'Lecture' | 'Lab'}) => (
@@ -40,13 +43,36 @@ const SectionTimeDisplay = ({ sectionTime, type }: { sectionTime: SectionTime, t
 );
 
 
-export function CourseCard({ course, onEdit, onDelete, onToggleCourse, onToggleSection }: CourseCardProps) {
+export function CourseCard({ course, onEdit, onDelete, onToggleCourse, onToggleSection, onUpdateCourseColor }: CourseCardProps) {
   return (
     <Card className={cn("overflow-hidden transition-all hover:shadow-md", !course.isEnabled && "bg-muted/50")}>
       <CardHeader className="flex flex-row items-start bg-muted/50">
         <div className="flex-grow">
           <CardTitle className="flex items-center gap-3">
-             <div className="w-4 h-4 rounded-full" style={{ backgroundColor: course.color }} />
+             <Popover>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <button className="w-4 h-4 rounded-full border" style={{ backgroundColor: course.color }} aria-label="Change course color" />
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Change Color</p>
+                  </TooltipContent>
+                </Tooltip>
+                <PopoverContent className="w-auto p-2">
+                    <div className="grid grid-cols-5 gap-2">
+                        {PASTEL_COLORS.map(color => (
+                            <button
+                                key={color}
+                                className={cn("w-6 h-6 rounded-full border", course.color === color && "ring-2 ring-ring ring-offset-2")}
+                                style={{ backgroundColor: color }}
+                                onClick={() => onUpdateCourseColor(course.id, color)}
+                            />
+                        ))}
+                    </div>
+                </PopoverContent>
+             </Popover>
             {course.name}
           </CardTitle>
            <CardDescription className="mt-1 flex items-center gap-4">
