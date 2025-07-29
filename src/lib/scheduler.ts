@@ -21,47 +21,55 @@ function doTimesConflict(time1: SectionTime, time2: SectionTime): boolean {
 function getScheduleConflicts(schedule: { course: Course; sectionId: string }[], allCourses: Course[]): Conflict[] {
   const conflicts: Conflict[] = [];
 
-  const findCourseName = (id: string) => allCourses.find(c => c.id === id)?.name || id;
+  const findCourseAndSection = (courseId: string, sectionId: string): { course: Course; section: Section } | null => {
+    const course = allCourses.find(c => c.id === courseId);
+    if (!course) return null;
+    const section = course.sections.find(s => s.id === sectionId);
+    if (!section) return null;
+    return { course, section };
+  };
+
+  const scheduleEntries = Object.entries(schedule).map(([courseId, { sectionId }]) => 
+    findCourseAndSection(courseId, sectionId)
+  ).filter(Boolean) as { course: Course; section: Section }[];
+
 
   // Check for time conflicts
-  for (let i = 0; i < schedule.length; i++) {
-    for (let j = i + 1; j < schedule.length; j++) {
-      const entry1 = schedule[i];
-      const entry2 = schedule[j];
-      const section1 = entry1.course.sections.find(s => s.id === entry1.sectionId)!;
-      const section2 = entry2.course.sections.find(s => s.id === entry2.sectionId)!;
+  for (let i = 0; i < scheduleEntries.length; i++) {
+    for (let j = i + 1; j < scheduleEntries.length; j++) {
+      const entry1 = scheduleEntries[i];
+      const entry2 = scheduleEntries[j];
       
       let hasConflict = false;
-      if(doTimesConflict(section1.lecture, section2.lecture)) hasConflict = true;
-      if (section1.lab && doTimesConflict(section1.lab, section2.lecture)) hasConflict = true;
-      if (section2.lab && doTimesConflict(section1.lecture, section2.lab)) hasConflict = true;
-      if (section1.lab && section2.lab && doTimesConflict(section1.lab, section2.lab)) hasConflict = true;
+      if (doTimesConflict(entry1.section.lecture, entry2.section.lecture)) hasConflict = true;
+      if (entry1.section.lab && doTimesConflict(entry1.section.lab, entry2.section.lecture)) hasConflict = true;
+      if (entry2.section.lab && doTimesConflict(entry1.section.lecture, entry2.section.lab)) hasConflict = true;
+      if (entry1.section.lab && entry2.section.lab && doTimesConflict(entry1.section.lab, entry2.section.lab)) hasConflict = true;
       
       if (hasConflict) {
         conflicts.push({ 
             type: 'time', 
             courses: [entry1.course.id, entry2.course.id],
-            message: `${findCourseName(entry1.course.id)} and ${findCourseName(entry2.course.id)} have a time conflict.`
+            message: `${entry1.course.name} and ${entry2.course.name} have a time conflict.`
         });
       }
     }
   }
 
   // Check for internal (lecture vs lab) time conflicts
-  for (const entry of schedule) {
-    const section = entry.course.sections.find(s => s.id === entry.sectionId)!;
-    if (section.lab && doTimesConflict(section.lecture, section.lab)) {
+  for (const entry of scheduleEntries) {
+    if (entry.section.lab && doTimesConflict(entry.section.lecture, entry.section.lab)) {
        conflicts.push({ 
             type: 'time', 
             courses: [entry.course.id, entry.course.id],
-            message: `${findCourseName(entry.course.id)} has an internal conflict between its lecture and lab.`
+            message: `${entry.course.name} has an internal conflict between its lecture and lab.`
        });
     }
   }
 
   // Check for exam conflicts
   const examPeriods = new Map<number, string[]>();
-  for (const entry of schedule) {
+  for (const entry of scheduleEntries) {
     if (entry.course.finalExamPeriod) {
       if (!examPeriods.has(entry.course.finalExamPeriod)) {
         examPeriods.set(entry.course.finalExamPeriod, []);
@@ -72,11 +80,11 @@ function getScheduleConflicts(schedule: { course: Course; sectionId: string }[],
 
   for (const [period, courseIds] of examPeriods.entries()) {
     if (courseIds.length > 1) {
-      const courseNames = courseIds.map(id => findCourseName(id));
+      const courseNames = courseIds.map(id => allCourses.find(c => c.id === id)?.name || id);
       conflicts.push({ 
           type: 'exam', 
           courses: courseIds,
-          message: `${courseNames.join(', ')} share the same final exam period: ${period}.`
+          message: `${courseNames.join(' and ')} share the same final exam period: ${period}.`
       });
     }
   }
@@ -85,12 +93,16 @@ function getScheduleConflicts(schedule: { course: Course; sectionId: string }[],
 }
 
 
-function calculateGapScore(schedule: { course: Course; sectionId: string }[]): number {
+function calculateGapScore(schedule: Schedule, allCourses: Course[]): number {
   let totalGaps = 0;
   const dailyEvents: { [day: string]: { start: number; end: number }[] } = {};
 
-  for (const entry of schedule) {
-    const section = entry.course.sections.find(s => s.id === entry.sectionId)!;
+  for (const courseId in schedule) {
+    const course = allCourses.find(c => c.id === courseId);
+    if (!course) continue;
+    const section = course.sections.find(s => s.id === schedule[courseId].sectionId);
+    if (!section) continue;
+
     const events = [section.lecture];
     if (section.lab) events.push(section.lab);
 
@@ -112,43 +124,46 @@ function calculateGapScore(schedule: { course: Course; sectionId: string }[]): n
   return totalGaps;
 }
 
-function findSchedulesForCourseSet(courses: Course[], allCourses: Course[]): Schedule[] {
-  if (courses.length === 0) return [];
-  const schedules: Schedule[] = [];
+function findSchedulesRecursive(
+  coursesToSchedule: Course[],
+  currentSchedule: Schedule,
+  allCourses: Course[]
+): Schedule[] {
+  if (coursesToSchedule.length === 0) {
+    return [currentSchedule];
+  }
 
-  function findSchedulesRecursive(
-    courseIndex: number,
-    currentSelection: { course: Course; sectionId: string }[]
-  ) {
-    if (courseIndex === courses.length) {
-      if (getScheduleConflicts(currentSelection, allCourses).length === 0) {
-        const finalSchedule: Schedule = {};
-        currentSelection.forEach(item => {
-          finalSchedule[item.course.id] = { sectionId: item.sectionId };
-        });
-        schedules.push(finalSchedule);
-      }
-      return;
-    }
+  const [currentCourse, ...remainingCourses] = coursesToSchedule;
+  let foundSchedules: Schedule[] = [];
 
-    const course = courses[courseIndex];
-    for (const section of course.sections) {
-      findSchedulesRecursive(courseIndex + 1, [...currentSelection, { course, sectionId: section.id }]);
+  for (const section of currentCourse.sections) {
+    const newSchedule = { ...currentSchedule, [currentCourse.id]: { sectionId: section.id } };
+    
+    if (getScheduleConflicts(newSchedule, allCourses).length === 0) {
+      foundSchedules = foundSchedules.concat(
+        findSchedulesRecursive(remainingCourses, newSchedule, allCourses)
+      );
     }
   }
 
-  findSchedulesRecursive(0, []);
-  return schedules;
+  return foundSchedules;
 }
 
 
 export function generateSchedules(allCourses: Course[]): GenerationResult {
     // Attempt with all courses first
-    let bestSchedules = findSchedulesForCourseSet(allCourses, allCourses);
+    let schedules = findSchedulesRecursive(allCourses, {}, allCourses);
 
-    if (bestSchedules.length > 0) {
+    if (schedules.length > 0) {
+        const scoredSchedules = schedules.map(schedule => ({
+          schedule,
+          score: calculateGapScore(schedule, allCourses)
+        })).sort((a,b) => a.score - b.score);
+
+        const uniqueSchedules = [...new Set(scoredSchedules.map(s => JSON.stringify(s.schedule)))].slice(0, 20).map(s => JSON.parse(s));
+
         return {
-            schedules: bestSchedules,
+            schedules: uniqueSchedules,
             conflicts: [],
             excludedCourses: [],
         };
@@ -156,50 +171,57 @@ export function generateSchedules(allCourses: Course[]): GenerationResult {
 
     // If no complete schedule, try removing one course at a time
     for (let i = allCourses.length - 1; i >= 0; i--) {
-        const excludedCourse = allCourses[i];
-        const remainingCourses = allCourses.filter(c => c.id !== excludedCourse.id);
+        const coursesToTry = [...allCourses];
+        const excludedCourse = coursesToTry.splice(i, 1)[0];
         
-        const partialSchedules = findSchedulesForCourseSet(remainingCourses, allCourses);
+        const partialSchedules = findSchedulesRecursive(coursesToTry, {}, allCourses);
 
         if (partialSchedules.length > 0) {
-            // We found a working set. Now, find the reason for exclusion.
+            // We found a working set. Now, find the specific reason for exclusion.
             let conflictReason: Conflict[] = [];
-            for (const includedCourse of remainingCourses) {
-                 const testSet = [includedCourse, excludedCourse];
-                 const sectionsToTest = testSet.map(c => ({ course: c, sectionId: c.sections[0].id }));
-                 const potentialConflicts = getScheduleConflicts(sectionsToTest, allCourses);
-                 if (potentialConflicts.length > 0) {
-                     conflictReason = potentialConflicts;
-                     break; 
-                 }
-            }
-             if (conflictReason.length === 0) {
-                // Fallback if direct pairwise conflict isn't found (more complex multi-course issue)
-                const sectionsToTest = allCourses.map(c => ({ course: c, sectionId: c.sections[0].id }));
-                conflictReason = getScheduleConflicts(sectionsToTest, allCourses);
+            for(const testCourse of coursesToTry) {
+              // Create a dummy schedule with just the excluded course and one of the included ones
+              const testSchedule: Schedule = {
+                [excludedCourse.id]: { sectionId: excludedCourse.sections[0].id },
+                [testCourse.id]: { sectionId: testCourse.sections[0].id }
+              };
+              const potentialConflicts = getScheduleConflicts(testSchedule, allCourses);
+              if (potentialConflicts.length > 0) {
+                // Found a direct conflict that explains the exclusion
+                conflictReason = potentialConflicts;
+                break;
+              }
             }
 
-            const scoredSchedules = partialSchedules.map(schedule => {
-                const selection = Object.keys(schedule).map(courseId => {
-                    const course = allCourses.find(c => c.id === courseId)!;
-                    return { course, sectionId: schedule[courseId].sectionId };
-                });
-                return { schedule, score: calculateGapScore(selection) };
-            }).sort((a, b) => a.score - b.score);
+            if (conflictReason.length === 0) {
+               // Fallback if a simple pair-wise conflict isn't the issue (more complex multi-course issue)
+               const scheduleWithAll = { ...partialSchedules[0], [excludedCourse.id]: {sectionId: excludedCourse.sections[0].id}};
+               conflictReason = getScheduleConflicts(scheduleWithAll, allCourses);
+            }
+
+            const scoredSchedules = partialSchedules.map(schedule => ({
+                schedule,
+                score: calculateGapScore(schedule, allCourses)
+            })).sort((a, b) => a.score - b.score);
 
             const uniqueSchedules = [...new Set(scoredSchedules.map(s => JSON.stringify(s.schedule)))].slice(0, 20).map(s => JSON.parse(s));
             
             return {
                 schedules: uniqueSchedules,
-                conflicts: conflictReason.slice(0,1),
+                conflicts: conflictReason.slice(0, 1), // Report the first, most direct conflict
                 excludedCourses: [excludedCourse],
             };
         }
     }
     
-    // If no schedule can be generated at all (even with removals)
-    const sectionsToTest = allCourses.map(c => ({ course: c, sectionId: c.sections[0].id }));
-    const conflicts = getScheduleConflicts(sectionsToTest, allCourses);
+    // If no schedule can be generated at all
+    const testSchedule = allCourses.reduce((acc, course) => {
+        if (course.sections.length > 0) {
+            acc[course.id] = { sectionId: course.sections[0].id };
+        }
+        return acc;
+    }, {} as Schedule);
+    const conflicts = getScheduleConflicts(testSchedule, allCourses);
 
     return {
         schedules: [],

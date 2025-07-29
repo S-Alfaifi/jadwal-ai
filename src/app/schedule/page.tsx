@@ -106,12 +106,16 @@ export default function SchedulePage() {
             onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
             onRegenerate={runScheduler}
           />
-           {excludedCourses.length > 0 && conflicts.length > 0 && (
+           {excludedCourses.length > 0 && (
             <Alert className="mt-4 border-primary/50 text-primary-foreground">
               <Info className="h-4 w-4" />
               <AlertTitle>Partial Schedule Generated</AlertTitle>
               <AlertDescription>
-                <p className="font-semibold">{conflicts[0].message}</p>
+                 {conflicts.length > 0 ? (
+                    <p className="font-semibold">{conflicts[0].message}</p>
+                 ) : (
+                    <p>A full schedule could not be generated.</p>
+                 )}
                 <p className="mt-2">To make a schedule, we had to exclude: <strong>{excludedCourses.map(c => c.name).join(', ')}</strong>.</p>
                 <p className="mt-1">This schedule includes: <strong>{includedCoursesInSchedule.map(c => c.name).join(', ')}</strong>.</p>
               </AlertDescription>
