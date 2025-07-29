@@ -92,13 +92,13 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
 
     return (
         <div className="grid grid-cols-[auto_1fr] bg-background font-sans">
-            <div className="sticky left-0 top-0 z-30 flex items-center justify-center bg-card border-r border-b p-2">
+            <div className="sticky left-0 top-0 z-30 flex items-center justify-center bg-card border-r p-2">
                 <div className="text-xs font-medium text-muted-foreground">Time</div>
             </div>
             
-            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(6rem, 1fr))`}}>
+            <div className="relative grid border-b" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(6rem, 1fr))`}}>
                  {timeSlots.map((time) => (
-                    <div key={time} className="text-center p-2 text-xs font-medium text-muted-foreground border-b border-r" >
+                    <div key={time} className="text-center p-2 text-xs font-medium text-muted-foreground border-r" >
                         {time.endsWith('00') ? time : ''}
                     </div>
                 ))}
@@ -246,4 +246,3 @@ export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
     </div>
   );
 }
-
