@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation';
 import { toPng } from 'html-to-image';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, ArrowLeft, Info, BrainCircuit } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, Info, Download } from 'lucide-react';
 import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
 import { Logo } from '@/components/logo';
@@ -106,7 +106,7 @@ export default function SchedulePage() {
       return;
     }
 
-    toPng(scheduleRef.current, { cacheBust: true, backgroundColor: '#ffffff', style: { padding: '20px' } })
+    toPng(scheduleRef.current, { cacheBust: true, backgroundColor: '#f0f8ff', style: { padding: '20px' } })
       .then((dataUrl) => {
         const link = document.createElement('a');
         link.download = 'schedule.png';

@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Camera } from "lucide-react";
+import { ArrowLeft, ArrowRight, Download } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -37,7 +37,7 @@ export function ScheduleControls({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline" size="icon" onClick={onSaveImage}>
-              <Camera className="h-4 w-4" />
+              <Download className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
