@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, forwardRef } from 'react';
 import type { Course, Schedule, Section, Day, SectionTime } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -167,7 +167,7 @@ interface ScheduleViewProps {
   schedule: Schedule | null;
 }
 
-export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
+export const ScheduleView = forwardRef<HTMLDivElement, ScheduleViewProps>(({ courses, schedule }, ref) => {
   const scheduledItems: { course: Course; section: Section; }[] = useMemo(() => {
     const items: { course: Course; section: Section; }[] = [];
     if (!schedule) return items;
@@ -238,7 +238,7 @@ export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
 
   return (
     <div className="mt-8">
-      <Card>
+      <Card ref={ref}>
         <CardContent className="p-0 overflow-x-auto">
             <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} />
         </CardContent>
@@ -247,4 +247,6 @@ export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
       {renderSummary()}
     </div>
   );
-}
+});
+
+ScheduleView.displayName = 'ScheduleView';

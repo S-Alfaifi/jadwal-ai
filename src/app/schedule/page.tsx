@@ -106,7 +106,7 @@ export default function SchedulePage() {
       return;
     }
 
-    toPng(scheduleRef.current, { cacheBust: true, backgroundColor: '#f0f8ff', style: { padding: '20px' } })
+    toPng(scheduleRef.current, { cacheBust: true, backgroundColor: '#ffffff', style: { padding: '20px' } })
       .then((dataUrl) => {
         const link = document.createElement('a');
         link.download = 'schedule.png';
@@ -158,12 +158,13 @@ export default function SchedulePage() {
               </AlertDescription>
             </Alert>
           )}
-          <div ref={scheduleRef}>
-            <ScheduleView
-              courses={includedCoursesInSchedule}
-              schedule={currentSchedule}
-            />
-          </div>
+          
+          <ScheduleView
+            ref={scheduleRef}
+            courses={includedCoursesInSchedule}
+            schedule={currentSchedule}
+          />
+
         </>
       );
     }
