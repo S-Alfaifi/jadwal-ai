@@ -89,9 +89,8 @@ export default function SchedulePage() {
 
     const conflict = conflicts.find(c => {
         const conflictCourseIds = new Set(c.courses.map(course => course.id));
-        const scheduleHasACourse = included.some(course => conflictCourseIds.has(course.id));
-        const excludedHasACourse = excluded.some(course => conflictCourseIds.has(course.id));
-        return scheduleHasACourse && excludedHasACourse;
+        const excludedCourse = excluded[0];
+        return excludedCourse && conflictCourseIds.has(excludedCourse.id);
     });
     
     return { 
@@ -118,7 +117,7 @@ export default function SchedulePage() {
     };
     element.style.overflow = 'visible';
     element.style.width = `${element.scrollWidth}px`;
-    element.style.height = `${element.scrollHeight}px`;
+    element.style.height = `${element.scrollHeight + 2}px`; // Add 2px to prevent bottom cutoff
 
 
     try {
@@ -170,12 +169,12 @@ export default function SchedulePage() {
               <AlertDescription>
                  {conflictForThisSchedule ? (
                     <p className="font-semibold">
-                      Conflict: {conflictForThisSchedule.courses.map(c => c.name).join(' and ')} have a {conflictForThisSchedule.type} conflict.
+                      {conflictForThisSchedule.courses.map(c => c.name).join(' and ')} have a {conflictForThisSchedule.type} conflict.
                     </p>
                  ) : (
                     <p>A full schedule could not be generated with all selected courses.</p>
                  )}
-                <p className="mt-2">To make this schedule, we had to exclude: <strong>{excludedCoursesForThisSchedule.map(c => c.name).join(', ')}</strong>.</p>
+                <p className="mt-2">To make a schedule, we had to exclude: <strong>{excludedCoursesForThisSchedule.map(c => c.name).join(', ')}</strong>.</p>
                 <p className="mt-1">This schedule includes: <strong>{includedCoursesInSchedule.map(c => c.name).join(', ')}</strong>.</p>
               </AlertDescription>
             </Alert>
