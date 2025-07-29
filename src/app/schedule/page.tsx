@@ -85,12 +85,14 @@ export default function SchedulePage() {
     const included = courses.filter(c => includedIds.has(c.id));
     
     const activeCourses = courses.filter(c => c.isEnabled && c.sections.some(s => s.isEnabled));
-    const excluded = activeCourses.filter(c => !includedIds.has(c.id));
+    const allCourseIds = new Set(activeCourses.map(c => c.id));
+    
+    included.forEach(c => allCourseIds.delete(c.id));
+    const excluded = activeCourses.filter(c => allCourseIds.has(c.id));
 
     const conflict = conflicts.find(c => {
         const conflictCourseIds = new Set(c.courses.map(course => course.id));
-        const excludedCourse = excluded[0];
-        return excludedCourse && conflictCourseIds.has(excludedCourse.id);
+        return excluded.some(excludedCourse => conflictCourseIds.has(excludedCourse.id));
     });
     
     return { 
@@ -117,14 +119,19 @@ export default function SchedulePage() {
     };
     element.style.overflow = 'visible';
     element.style.width = `${element.scrollWidth}px`;
-    element.style.height = `${element.scrollHeight + 2}px`; // Add 2px to prevent bottom cutoff
+    element.style.height = `${element.scrollHeight}px`;
 
 
     try {
         const dataUrl = await toPng(element, { 
             cacheBust: true, 
             backgroundColor: '#ffffff', 
-            style: { padding: '20px' } 
+            style: { 
+                paddingTop: '20px',
+                paddingLeft: '20px',
+                paddingRight: '20px',
+                paddingBottom: '22px'
+            } 
         });
         const link = document.createElement('a');
         link.download = 'schedule.png';
