@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview AI-powered schedule workaround suggestions.
@@ -67,7 +68,7 @@ Suggestions could include:
 Here is the student's desired course list:
 {{{JSON.stringify(courses, null, 2)}}}
 
-Please provide helpful workarounds.`,
+Please provide helpful workarounds. Do not generate a valid schedule, only provide suggestions.`,
 });
 
 const suggestScheduleWorkaroundsFlow = ai.defineFlow(

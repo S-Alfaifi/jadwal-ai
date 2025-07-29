@@ -48,6 +48,7 @@ export default function SchedulePage() {
     setIsLoading(true);
     setAiSuggestions(null);
     setExcludedCourse(null);
+    setCurrentScheduleIndex(0);
     
     setTimeout(async () => {
       let generated = generateSchedules(courses, lockedSections);
@@ -77,9 +78,10 @@ export default function SchedulePage() {
           const formattedCoursesForAI = courses.map(course => ({
             name: course.name,
             sections: course.sections.map(section => ({
-              ...section,
-              type: (section.lab ? 'Lecture, Lab' : 'Lecture') as any, // Simplified for AI
-              days: section.lecture.days.map(d => d as 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu'),
+              id: section.id,
+              name: section.name,
+              type: section.lab ? 'Lecture' : 'Lecture', // simplified type
+              days: section.lecture.days,
               startTime: section.lecture.startTime,
               endTime: section.lecture.endTime,
             }))
