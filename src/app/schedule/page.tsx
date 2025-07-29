@@ -112,26 +112,22 @@ export default function SchedulePage() {
     const element = scheduleRef.current.scheduleGrid.firstChild as HTMLElement;
     if(!element) return;
     
-    const originalStyle = {
-      overflow: element.style.overflow,
-      width: element.style.width,
-      height: element.style.height
-    };
-    element.style.overflow = 'visible';
-    element.style.width = `${element.scrollWidth}px`;
-    element.style.height = `${element.scrollHeight}px`;
+    const clone = element.cloneNode(true) as HTMLElement;
+    
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    clone.style.top = '-9999px';
+    clone.style.width = `${element.scrollWidth}px`;
+    clone.style.height = `${element.scrollHeight}px`;
+    clone.style.overflow = 'visible';
 
+    document.body.appendChild(clone);
 
     try {
-        const dataUrl = await toPng(element, { 
+        const dataUrl = await toPng(clone, { 
             cacheBust: true, 
-            backgroundColor: '#ffffff', 
-            style: { 
-                paddingTop: '20px',
-                paddingLeft: '20px',
-                paddingRight: '20px',
-                paddingBottom: '35px'
-            } 
+            backgroundColor: '#ffffff',
+            pixelRatio: 2,
         });
         const link = document.createElement('a');
         link.download = 'schedule.png';
@@ -140,9 +136,7 @@ export default function SchedulePage() {
     } catch (err) {
         console.error('Failed to save image', err);
     } finally {
-        element.style.overflow = originalStyle.overflow;
-        element.style.width = originalStyle.width;
-        element.style.height = originalStyle.height;
+        document.body.removeChild(clone);
     }
   }, []);
 
