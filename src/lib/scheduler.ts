@@ -18,80 +18,76 @@ function doTimesConflict(time1: SectionTime, time2: SectionTime): boolean {
   return start1 < end2 && start2 < end1;
 }
 
-function getScheduleConflicts(schedule: { course: Course; sectionId: string }[], allCourses: Course[]): Conflict[] {
-  const conflicts: Conflict[] = [];
-
-  const findCourseAndSection = (courseId: string, sectionId: string): { course: Course; section: Section } | null => {
-    const course = allCourses.find(c => c.id === courseId);
-    if (!course) return null;
-    const section = course.sections.find(s => s.id === sectionId);
-    if (!section) return null;
-    return { course, section };
-  };
-
-  const scheduleEntries = Object.entries(schedule).map(([courseId, { sectionId }]) => 
-    findCourseAndSection(courseId, sectionId)
-  ).filter(Boolean) as { course: Course; section: Section }[];
-
-
-  // Check for time conflicts
-  for (let i = 0; i < scheduleEntries.length; i++) {
-    for (let j = i + 1; j < scheduleEntries.length; j++) {
-      const entry1 = scheduleEntries[i];
-      const entry2 = scheduleEntries[j];
-      
-      let hasConflict = false;
-      if (doTimesConflict(entry1.section.lecture, entry2.section.lecture)) hasConflict = true;
-      if (entry1.section.lab && doTimesConflict(entry1.section.lab, entry2.section.lecture)) hasConflict = true;
-      if (entry2.section.lab && doTimesConflict(entry1.section.lecture, entry2.section.lab)) hasConflict = true;
-      if (entry1.section.lab && entry2.section.lab && doTimesConflict(entry1.section.lab, entry2.section.lab)) hasConflict = true;
-      
-      if (hasConflict) {
-        conflicts.push({ 
-            type: 'time', 
-            courses: [entry1.course.id, entry2.course.id],
-            message: `${entry1.course.name} and ${entry2.course.name} have a time conflict.`
-        });
-      }
+function getScheduleConflicts(schedule: { course: Course; section: Section }[]): Conflict[] {
+    const conflicts: Conflict[] = [];
+    
+    // Check for time conflicts between different courses
+    for (let i = 0; i < schedule.length; i++) {
+        for (let j = i + 1; j < schedule.length; j++) {
+            const entry1 = schedule[i];
+            const entry2 = schedule[j];
+            
+            let hasConflict = false;
+            if (doTimesConflict(entry1.section.lecture, entry2.section.lecture)) hasConflict = true;
+            if (entry1.section.lab && doTimesConflict(entry1.section.lab, entry2.section.lecture)) hasConflict = true;
+            if (entry2.section.lab && doTimesConflict(entry1.section.lecture, entry2.section.lab)) hasConflict = true;
+            if (entry1.section.lab && entry2.section.lab && doTimesConflict(entry1.section.lab, entry2.section.lab)) hasConflict = true;
+            
+            if (hasConflict) {
+                conflicts.push({ 
+                    type: 'time', 
+                    courses: [entry1.course, entry2.course],
+                    message: `${entry1.course.name} and ${entry2.course.name} have a time conflict.`
+                });
+            }
+        }
     }
-  }
 
-  // Check for internal (lecture vs lab) time conflicts
-  for (const entry of scheduleEntries) {
-    if (entry.section.lab && doTimesConflict(entry.section.lecture, entry.section.lab)) {
-       conflicts.push({ 
-            type: 'time', 
-            courses: [entry.course.id, entry.course.id],
-            message: `${entry.course.name} has an internal conflict between its lecture and lab.`
-       });
+    // Check for internal (lecture vs lab) time conflicts within the same course section
+    for (const entry of schedule) {
+        if (entry.section.lab && doTimesConflict(entry.section.lecture, entry.section.lab)) {
+            conflicts.push({ 
+                type: 'time', 
+                courses: [entry.course],
+                message: `${entry.course.name} (${entry.section.name}) has an internal conflict between its lecture and lab.`
+            });
+        }
     }
-  }
 
-  // Check for exam conflicts
-  const examPeriods = new Map<number, string[]>();
-  for (const entry of scheduleEntries) {
-    if (entry.course.finalExamPeriod) {
-      if (!examPeriods.has(entry.course.finalExamPeriod)) {
-        examPeriods.set(entry.course.finalExamPeriod, []);
-      }
-      examPeriods.get(entry.course.finalExamPeriod)!.push(entry.course.id);
+    // Check for exam conflicts
+    const examPeriods = new Map<number, Course[]>();
+    for (const entry of schedule) {
+        if (entry.course.finalExamPeriod) {
+            if (!examPeriods.has(entry.course.finalExamPeriod)) {
+                examPeriods.set(entry.course.finalExamPeriod, []);
+            }
+            examPeriods.get(entry.course.finalExamPeriod)!.push(entry.course);
+        }
     }
-  }
-
-  for (const [period, courseIds] of examPeriods.entries()) {
-    if (courseIds.length > 1) {
-      const courseNames = courseIds.map(id => allCourses.find(c => c.id === id)?.name || id);
-      conflicts.push({ 
-          type: 'exam', 
-          courses: courseIds,
-          message: `${courseNames.join(' and ')} share the same final exam period: ${period}.`
-      });
+    
+    for (const [period, courses] of examPeriods.entries()) {
+        if (courses.length > 1) {
+            const courseNames = courses.map(c => c.name);
+            conflicts.push({ 
+                type: 'exam', 
+                courses: courses,
+                message: `${courseNames.join(' and ')} share the same final exam period: ${period}.`
+            });
+        }
     }
-  }
   
   return conflicts;
 }
 
+function findScheduleConflicts(schedule: Schedule, allCourses: Course[]): Conflict[] {
+    const scheduleEntries = Object.entries(schedule).map(([courseId, { sectionId }]) => {
+        const course = allCourses.find(c => c.id === courseId);
+        const section = course?.sections.find(s => s.id === sectionId);
+        return { course, section };
+    }).filter((e): e is { course: Course, section: Section } => !!e.course && !!e.section);
+
+    return getScheduleConflicts(scheduleEntries);
+}
 
 function calculateGapScore(schedule: Schedule, allCourses: Course[]): number {
   let totalGaps = 0;
@@ -139,7 +135,7 @@ function findSchedulesRecursive(
   for (const section of currentCourse.sections) {
     const newSchedule = { ...currentSchedule, [currentCourse.id]: { sectionId: section.id } };
     
-    if (getScheduleConflicts(newSchedule, allCourses).length === 0) {
+    if (findScheduleConflicts(newSchedule, allCourses).length === 0) {
       foundSchedules = foundSchedules.concat(
         findSchedulesRecursive(remainingCourses, newSchedule, allCourses)
       );
@@ -169,59 +165,67 @@ export function generateSchedules(allCourses: Course[]): GenerationResult {
         };
     }
 
-    // If no complete schedule, try removing one course at a time
-    for (let i = allCourses.length - 1; i >= 0; i--) {
+    // If no complete schedule, try generating partial schedules by removing one course at a time
+    let allPartialSchedules: Schedule[] = [];
+    let allConflicts: Conflict[] = [];
+    let allExcludedCourses: Course[] = [];
+
+    for (let i = 0; i < allCourses.length; i++) {
         const coursesToTry = [...allCourses];
         const excludedCourse = coursesToTry.splice(i, 1)[0];
         
         const partialSchedules = findSchedulesRecursive(coursesToTry, {}, allCourses);
 
         if (partialSchedules.length > 0) {
-            // We found a working set. Now, find the specific reason for exclusion.
+            allPartialSchedules.push(...partialSchedules);
+            allExcludedCourses.push(excludedCourse);
+
+            // Find the reason for exclusion
             let conflictReason: Conflict[] = [];
-            for(const testCourse of coursesToTry) {
-              // Create a dummy schedule with just the excluded course and one of the included ones
-              const testSchedule: Schedule = {
-                [excludedCourse.id]: { sectionId: excludedCourse.sections[0].id },
-                [testCourse.id]: { sectionId: testCourse.sections[0].id }
-              };
-              const potentialConflicts = getScheduleConflicts(testSchedule, allCourses);
-              if (potentialConflicts.length > 0) {
-                // Found a direct conflict that explains the exclusion
-                conflictReason = potentialConflicts;
-                break;
-              }
+            // To find the conflict, we test the excluded course against the *first* successful partial schedule
+            const firstPartialSchedule = partialSchedules[0];
+            const testScheduleWithExclusion = { ...firstPartialSchedule, [excludedCourse.id]: { sectionId: excludedCourse.sections[0].id } };
+            const potentialConflicts = findScheduleConflicts(testScheduleWithExclusion, allCourses);
+            if (potentialConflicts.length > 0) {
+                // We found a direct conflict.
+                const specificConflict = potentialConflicts.find(p => p.courses.some(c => c.id === excludedCourse.id));
+                if (specificConflict) {
+                    allConflicts.push(specificConflict);
+                } else {
+                     allConflicts.push(potentialConflicts[0]);
+                }
             }
-
-            if (conflictReason.length === 0) {
-               // Fallback if a simple pair-wise conflict isn't the issue (more complex multi-course issue)
-               const scheduleWithAll = { ...partialSchedules[0], [excludedCourse.id]: {sectionId: excludedCourse.sections[0].id}};
-               conflictReason = getScheduleConflicts(scheduleWithAll, allCourses);
-            }
-
-            const scoredSchedules = partialSchedules.map(schedule => ({
-                schedule,
-                score: calculateGapScore(schedule, allCourses)
-            })).sort((a, b) => a.score - b.score);
-
-            const uniqueSchedules = [...new Set(scoredSchedules.map(s => JSON.stringify(s.schedule)))].slice(0, 20).map(s => JSON.parse(s));
-            
-            return {
-                schedules: uniqueSchedules,
-                conflicts: conflictReason.slice(0, 1), // Report the first, most direct conflict
-                excludedCourses: [excludedCourse],
-            };
         }
     }
     
-    // If no schedule can be generated at all
+    if (allPartialSchedules.length > 0) {
+        const scoredSchedules = allPartialSchedules.map(schedule => ({
+            schedule,
+            score: calculateGapScore(schedule, allCourses)
+        })).sort((a, b) => a.score - b.score);
+
+        const uniqueSchedules = [...new Set(scoredSchedules.map(s => JSON.stringify(s.schedule)))].slice(0, 20).map(s => JSON.parse(s));
+        
+        // This part is tricky - which conflict to show? We'll show the one related to the first generated schedule.
+        const firstScheduleCourseIds = Object.keys(uniqueSchedules[0]);
+        const firstExcludedCourse = allCourses.find(c => !firstScheduleCourseIds.includes(c.id));
+        let conflictToShow = allConflicts.find(conflict => conflict.courses.some(c => c.id === firstExcludedCourse?.id));
+
+        return {
+            schedules: uniqueSchedules,
+            conflicts: conflictToShow ? [conflictToShow] : allConflicts.slice(0, 1),
+            excludedCourses: firstExcludedCourse ? [firstExcludedCourse] : [],
+        };
+    }
+    
+    // If no schedule can be generated at all, find a representative conflict
     const testSchedule = allCourses.reduce((acc, course) => {
         if (course.sections.length > 0) {
             acc[course.id] = { sectionId: course.sections[0].id };
         }
         return acc;
     }, {} as Schedule);
-    const conflicts = getScheduleConflicts(testSchedule, allCourses);
+    const conflicts = findScheduleConflicts(testSchedule, allCourses);
 
     return {
         schedules: [],

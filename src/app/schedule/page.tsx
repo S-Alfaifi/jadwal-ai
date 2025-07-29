@@ -67,21 +67,23 @@ export default function SchedulePage() {
     }
   }, [isMounted, courses, runScheduler]);
 
-  const { schedules = [], conflicts = [], excludedCourses = [] } = generationResult || {};
+  const { schedules = [], conflicts = [], excludedCourses: rawExcludedCourses = [] } = generationResult || {};
 
-  const { currentSchedule, includedCoursesInSchedule } = useMemo(() => {
+  const { currentSchedule, includedCoursesInSchedule, excludedCoursesForThisSchedule } = useMemo(() => {
     if (!schedules || schedules.length === 0) {
-      return { currentSchedule: null, includedCoursesInSchedule: [] };
+      return { currentSchedule: null, includedCoursesInSchedule: [], excludedCoursesForThisSchedule: [] };
     }
     const schedule = schedules[currentScheduleIndex];
     if (!schedule) {
-       return { currentSchedule: null, includedCoursesInSchedule: [] };
+       return { currentSchedule: null, includedCoursesInSchedule: [], excludedCoursesForThisSchedule: [] };
     }
     
-    const includedIds = Object.keys(schedule);
-    const included = courses.filter(c => includedIds.includes(c.id));
+    const includedIds = new Set(Object.keys(schedule));
+    const included = courses.filter(c => includedIds.has(c.id));
+    const activeCourses = courses.filter(c => c.isEnabled && c.sections.some(s => s.isEnabled));
+    const excluded = activeCourses.filter(c => !includedIds.has(c.id));
     
-    return { currentSchedule: schedule, includedCoursesInSchedule: included };
+    return { currentSchedule: schedule, includedCoursesInSchedule: included, excludedCoursesForThisSchedule: excluded };
   }, [schedules, currentScheduleIndex, courses]);
 
   if (!isMounted) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -106,7 +108,7 @@ export default function SchedulePage() {
             onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
             onRegenerate={runScheduler}
           />
-           {excludedCourses.length > 0 && (
+           {excludedCoursesForThisSchedule.length > 0 && (
             <Alert className="mt-4 border-primary/50 text-primary-foreground">
               <Info className="h-4 w-4" />
               <AlertTitle>Partial Schedule Generated</AlertTitle>
@@ -114,9 +116,9 @@ export default function SchedulePage() {
                  {conflicts.length > 0 ? (
                     <p className="font-semibold">{conflicts[0].message}</p>
                  ) : (
-                    <p>A full schedule could not be generated.</p>
+                    <p>A full schedule could not be generated with all courses.</p>
                  )}
-                <p className="mt-2">To make a schedule, we had to exclude: <strong>{excludedCourses.map(c => c.name).join(', ')}</strong>.</p>
+                <p className="mt-2">To make this schedule, we had to exclude: <strong>{excludedCoursesForThisSchedule.map(c => c.name).join(', ')}</strong>.</p>
                 <p className="mt-1">This schedule includes: <strong>{includedCoursesInSchedule.map(c => c.name).join(', ')}</strong>.</p>
               </AlertDescription>
             </Alert>
