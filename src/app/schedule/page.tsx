@@ -109,21 +109,35 @@ export default function SchedulePage() {
     if (!scheduleRef.current?.scheduleGrid) {
       return;
     }
-    
+
     const element = scheduleRef.current.scheduleGrid;
+    
+    // Temporarily apply styles to capture the full content
+    const originalStyle = element.style.cssText;
+    element.style.overflow = 'visible';
+    element.style.width = `${element.scrollWidth}px`;
+    element.style.height = 'auto';
+
 
     try {
-        const dataUrl = await toPng(element, { 
-            cacheBust: true, 
-            backgroundColor: 'hsl(var(--card))',
+        const computedStyle = window.getComputedStyle(element);
+        const backgroundColor = computedStyle.backgroundColor;
+
+        const dataUrl = await toPng(element, {
+            cacheBust: true,
+            backgroundColor: backgroundColor,
             pixelRatio: 2,
         });
+
         const link = document.createElement('a');
         link.download = 'schedule.png';
         link.href = dataUrl;
         link.click();
     } catch (err) {
         console.error('Failed to save image', err);
+    } finally {
+        // Restore original styles
+        element.style.cssText = originalStyle;
     }
   }, []);
 
