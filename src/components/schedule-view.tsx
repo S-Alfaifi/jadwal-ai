@@ -204,12 +204,8 @@ export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
         })
     });
     
-    let startH = Math.floor(minMinute/60);
-    let endH = Math.ceil(maxMinute/60);
-
-    // Add padding
-    startH = Math.max(0, startH - 1);
-    endH = Math.min(24, endH + 1);
+    const startH = Math.floor(minMinute/60);
+    const endH = Math.ceil(maxMinute/60);
 
     return {startHour: startH, endHour: endH};
   }, [scheduledItems]);
