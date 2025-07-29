@@ -48,18 +48,18 @@ export default function SchedulePage() {
     setIsLoading(true);
     setAiSuggestions(null);
     setExcludedCourse(null);
-    setCurrentScheduleIndex(0);
     
     setTimeout(async () => {
       let generated = generateSchedules(courses, lockedSections);
 
-      // If no schedule, try removing one course at a time
+      // If no schedule, try removing one course at a time, starting from the last added one.
       if (generated.length === 0 && courses.length > 1) {
-        for (let i = 0; i < courses.length; i++) {
+        for (let i = courses.length - 1; i >= 0; i--) {
           const courseToExclude = courses[i];
           const coursesToTry = courses.filter(c => c.id !== courseToExclude.id);
-          generated = generateSchedules(coursesToTry, lockedSections);
-          if (generated.length > 0) {
+          const partialSchedules = generateSchedules(coursesToTry, lockedSections);
+          if (partialSchedules.length > 0) {
+            generated = partialSchedules;
             setExcludedCourse(courseToExclude);
             break; // Found a working partial schedule
           }
@@ -69,25 +69,30 @@ export default function SchedulePage() {
       if (generated.length > 0) {
         setSchedules(generated);
         setCurrentScheduleIndex(0);
-        setIsLoading(false);
       } else {
         setSchedules([]);
         setIsAiLoading(true);
-        setIsLoading(false);
         try {
           const formattedCoursesForAI = courses.map(course => ({
             name: course.name,
-            sections: course.sections.map(section => ({
-              id: section.id,
-              name: section.name,
-              type: section.lab ? 'Lecture' : 'Lecture', // simplified type
-              days: section.lecture.days,
-              startTime: section.lecture.startTime,
-              endTime: section.lecture.endTime,
-            }))
+            sections: course.sections.map(section => {
+              const lectureDetails = {
+                id: section.id,
+                name: section.name,
+                days: section.lecture.days,
+                startTime: section.lecture.startTime,
+                endTime: section.lecture.endTime,
+                type: 'Lecture' as const,
+              };
+              if (section.lab) {
+                // This simplification might need adjustment based on AI model needs
+                 return lectureDetails;
+              }
+              return lectureDetails;
+            }),
           }));
-          
-          const result = await suggestScheduleWorkarounds({ courses: formattedCoursesForAI });
+
+          const result = await suggestScheduleWorkarounds({ courses: formattedCoursesForAI.flat() });
           setAiSuggestions(result.suggestions);
         } catch (error) {
           console.error("AI suggestion failed:", error);
@@ -96,8 +101,10 @@ export default function SchedulePage() {
           setIsAiLoading(false);
         }
       }
+      setIsLoading(false);
     }, 50);
   }, [courses, lockedSections]);
+
 
   useEffect(() => {
     if (isMounted && courses.length > 0) {
