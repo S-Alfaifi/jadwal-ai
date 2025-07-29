@@ -1,13 +1,12 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, RefreshCw, Columns, Shuffle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Columns } from "lucide-react";
 
 interface ScheduleControlsProps {
   current: number;
   total: number;
   onPrev: () => void;
   onNext: () => void;
-  onShowAlternatives: () => void;
   disableSemesterSplit?: boolean;
 }
 
@@ -16,7 +15,6 @@ export function ScheduleControls({
   total,
   onPrev,
   onNext,
-  onShowAlternatives,
   disableSemesterSplit,
 }: ScheduleControlsProps) {
   return (
@@ -40,10 +38,6 @@ export function ScheduleControls({
             </Button>
           </>
         )}
-        <Button variant="outline" onClick={onShowAlternatives}>
-          <Shuffle className="mr-2 h-4 w-4" />
-          View Alternatives
-        </Button>
         <Button variant="outline" disabled={disableSemesterSplit}>
           <Columns className="mr-2 h-4 w-4" />
           Split into Two Semesters
@@ -52,5 +46,3 @@ export function ScheduleControls({
     </div>
   );
 }
-
-    

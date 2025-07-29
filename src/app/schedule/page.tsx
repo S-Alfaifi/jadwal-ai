@@ -36,14 +36,14 @@ export default function SchedulePage() {
     }
 
     setIsLoading(true);
+    setCurrentScheduleIndex(0);
     setAiSuggestions(null);
     setExcludedCourses([]);
     setIncludedCourses(courses);
     
     setTimeout(async () => {
       // Attempt to generate with all courses first
-      let generatedSchedules = generateSchedules(courses, lockedSections);
-      let bestSchedules = generatedSchedules;
+      let bestSchedules = generateSchedules(courses, lockedSections);
       let finalIncludedCourses = courses;
 
       // If no schedule with all courses, try removing one at a time
@@ -52,9 +52,10 @@ export default function SchedulePage() {
         let bestPartials: Schedule[] = [];
         let bestIncluded: Course[] = [];
 
-        // Find the best possible partial schedules
         for (let i = 0; i < courses.length; i++) {
-          const coursesToTry = courses.filter((_, index) => index !== i);
+          const coursesToTry = courses.filter((c) => c.id !== courses[i].id);
+          if (coursesToTry.length < maxCoursesScheduled) continue;
+
           const partialSchedules = generateSchedules(coursesToTry, lockedSections);
 
           if (partialSchedules.length > 0) {
@@ -63,6 +64,8 @@ export default function SchedulePage() {
                 bestPartials = partialSchedules;
                 bestIncluded = coursesToTry;
              } else if (coursesToTry.length === maxCoursesScheduled) {
+                // This is a different combination of courses with the same number of courses,
+                // so we should consider these schedules as well.
                 bestPartials.push(...partialSchedules);
              }
           }
@@ -86,21 +89,18 @@ export default function SchedulePage() {
         try {
           const formattedCoursesForAI = courses.map(course => ({
             name: course.name,
-            sections: course.sections.map(section => {
-              const lectureDetails = {
-                id: section.id,
-                name: section.name,
-                days: section.lecture.days,
-                startTime: section.lecture.startTime,
-                endTime: section.lecture.endTime,
-                type: 'Lecture' as const,
-              };
-              // This logic could be improved to pass lab info as well
-              return lectureDetails;
-            }),
+            sections: course.sections.map(section => ({
+              id: section.id,
+              name: section.name,
+              days: section.lecture.days,
+              startTime: section.lecture.startTime,
+              endTime: section.lecture.endTime,
+              type: 'Lecture' as const,
+              // Note: Lab data is not passed to AI for simplicity.
+            })),
           }));
 
-          const result = await suggestScheduleWorkarounds({ courses: formattedCoursesForAI.flat() });
+          const result = await suggestScheduleWorkarounds({ courses: formattedCoursesForAI });
           setAiSuggestions(result.suggestions);
         } catch (error) {
           console.error("AI suggestion failed:", error);
@@ -162,7 +162,6 @@ export default function SchedulePage() {
             total={schedules.length}
             onNext={() => setCurrentScheduleIndex(i => (i + 1) % schedules.length)}
             onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
-            onShowAlternatives={() => { /* This can be used for more complex alternative views later */ }}
             disableSemesterSplit={true}
           />
            {excludedCourses.length > 0 && (
@@ -230,5 +229,3 @@ export default function SchedulePage() {
     </div>
   );
 }
-
-    
