@@ -6,11 +6,6 @@ import type { Course, Schedule, Section, Day, SectionTime } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-interface ScheduleViewProps {
-  courses: Course[];
-  schedule: Schedule;
-}
-
 const timeToMinutes = (time: string): number => {
   const [h, m] = time.split(':').map(Number);
   return h * 60 + m;
@@ -97,7 +92,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
 
     return (
         <div className="grid grid-cols-[auto_1fr] bg-background font-sans">
-            <div className="sticky left-0 top-0 z-30 bg-card border-b border-r"></div>
+            <div className="sticky left-0 top-0 z-30 bg-card border-r"></div>
             
             <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(6rem, 1fr))`}}>
                  {timeSlots.map((time) => (
