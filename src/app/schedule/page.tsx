@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, ArrowLeft, Info } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, Info, BrainCircuit } from 'lucide-react';
 import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
 import { Logo } from '@/components/logo';
@@ -82,11 +82,27 @@ export default function SchedulePage() {
     
     let reason = 'a time conflict';
     if (excludedCourses.length > 0 && generationResult?.conflicts) {
-        const conflict = generationResult.conflicts.find(c => 
-            excludedCourses.some(ec => c.courses.includes(ec.id)) &&
-            included.some(ic => c.courses.includes(ic.id))
-        );
-        if (conflict?.type === 'exam') {
+       const includedCourseSchedules = included.map(c => ({course: c, sectionId: schedule[c.id].sectionId}));
+       const examPeriods = new Map<number, string[]>();
+
+       for (const entry of includedCourseSchedules) {
+         if (entry.course.finalExamPeriod) {
+           if (!examPeriods.has(entry.course.finalExamPeriod)) {
+             examPeriods.set(entry.course.finalExamPeriod, []);
+           }
+           examPeriods.get(entry.course.finalExamPeriod)!.push(entry.course.id);
+         }
+       }
+        
+       let hasExamConflict = false;
+       for (const [_, courseIds] of examPeriods.entries()) {
+           if(courseIds.length > 1) {
+               hasExamConflict = true;
+               break;
+           }
+       }
+        
+        if (hasExamConflict) {
             reason = 'a final exam period conflict';
         }
     }
