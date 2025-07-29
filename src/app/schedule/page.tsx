@@ -22,7 +22,10 @@ export default function SchedulePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
-  const scheduleRef = useRef<HTMLDivElement>(null);
+  const scheduleRef = useRef<{
+    scheduleGrid: HTMLDivElement | null;
+    summary: HTMLDivElement | null;
+  }>(null);
 
   const runScheduler = useCallback(() => {
     const activeCourses = courses
@@ -101,21 +104,43 @@ export default function SchedulePage() {
   }, [schedules, currentScheduleIndex, courses, conflicts]);
 
 
-  const handleSaveImage = useCallback(() => {
-    if (scheduleRef.current === null) {
+  const handleSaveImage = useCallback(async () => {
+    if (scheduleRef.current?.scheduleGrid === null || !scheduleRef.current?.scheduleGrid) {
       return;
     }
+    
+    const element = scheduleRef.current.scheduleGrid.firstChild as HTMLElement;
+    if(!element) return;
+    
+    // Temporarily modify styles for full capture
+    const originalStyle = {
+      overflow: element.style.overflow,
+      width: element.style.width,
+      height: element.style.height
+    };
+    element.style.overflow = 'visible';
+    element.style.width = `${element.scrollWidth}px`;
+    element.style.height = `${element.scrollHeight}px`;
 
-    toPng(scheduleRef.current, { cacheBust: true, backgroundColor: '#ffffff', style: { padding: '20px' } })
-      .then((dataUrl) => {
+
+    try {
+        const dataUrl = await toPng(element, { 
+            cacheBust: true, 
+            backgroundColor: '#ffffff', 
+            style: { padding: '20px' } 
+        });
         const link = document.createElement('a');
         link.download = 'schedule.png';
         link.href = dataUrl;
         link.click();
-      })
-      .catch((err) => {
+    } catch (err) {
         console.error('Failed to save image', err);
-      });
+    } finally {
+        // Restore original styles
+        element.style.overflow = originalStyle.overflow;
+        element.style.width = originalStyle.width;
+        element.style.height = originalStyle.height;
+    }
   }, []);
 
 

@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useMemo, forwardRef } from 'react';
+import React, { useMemo, forwardRef, useRef, useImperativeHandle } from 'react';
 import type { Course, Schedule, Section, Day, SectionTime } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -167,7 +167,18 @@ interface ScheduleViewProps {
   schedule: Schedule | null;
 }
 
-export const ScheduleView = forwardRef<HTMLDivElement, ScheduleViewProps>(({ courses, schedule }, ref) => {
+export const ScheduleView = forwardRef<{
+    scheduleGrid: HTMLDivElement | null;
+    summary: HTMLDivElement | null;
+  }, ScheduleViewProps>(({ courses, schedule }, ref) => {
+  const scheduleGridRef = useRef<HTMLDivElement>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    scheduleGrid: scheduleGridRef.current,
+    summary: summaryRef.current,
+  }));
+  
   const scheduledItems: { course: Course; section: Section; }[] = useMemo(() => {
     const items: { course: Course; section: Section; }[] = [];
     if (!schedule) return items;
@@ -211,7 +222,7 @@ export const ScheduleView = forwardRef<HTMLDivElement, ScheduleViewProps>(({ cou
   }, [scheduledItems]);
 
   const renderSummary = () => (
-    <div className="mt-8">
+    <div className="mt-8" ref={summaryRef}>
       <Card>
           <CardHeader>
             <CardTitle>Course Summary</CardTitle>
@@ -238,9 +249,11 @@ export const ScheduleView = forwardRef<HTMLDivElement, ScheduleViewProps>(({ cou
 
   return (
     <div className="mt-8">
-      <Card ref={ref}>
-        <CardContent className="p-0 overflow-x-auto">
-            <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} />
+      <Card>
+        <CardContent className="p-0" ref={scheduleGridRef}>
+           <div className="overflow-x-auto">
+             <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} />
+           </div>
         </CardContent>
       </Card>
       
