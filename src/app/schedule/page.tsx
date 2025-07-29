@@ -111,13 +111,6 @@ export default function SchedulePage() {
     }
 
     const element = scheduleRef.current.scheduleGrid;
-    
-    // Temporarily apply styles to capture the full content
-    const originalStyle = element.style.cssText;
-    element.style.overflow = 'visible';
-    element.style.width = `${element.scrollWidth}px`;
-    element.style.height = 'auto';
-
 
     try {
         const computedStyle = window.getComputedStyle(element);
@@ -125,6 +118,7 @@ export default function SchedulePage() {
 
         const dataUrl = await toPng(element, {
             cacheBust: true,
+            skipFonts: true, // This is the key change to prevent the error
             backgroundColor: backgroundColor,
             pixelRatio: 2,
         });
@@ -135,9 +129,6 @@ export default function SchedulePage() {
         link.click();
     } catch (err) {
         console.error('Failed to save image', err);
-    } finally {
-        // Restore original styles
-        element.style.cssText = originalStyle;
     }
   }, []);
 
