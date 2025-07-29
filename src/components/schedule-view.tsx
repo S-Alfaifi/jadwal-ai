@@ -1,10 +1,10 @@
 
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { Course, Schedule, Section, Day, LayoutDirection } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
-import { Card, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface ScheduleViewProps {
@@ -16,21 +16,22 @@ interface ScheduleViewProps {
   layout: LayoutDirection;
 }
 
-const START_HOUR = 8;
-const END_HOUR = 17; // Represents the end of the 16:00 hour, so up to 17:00
-const timeSlots = Array.from({ length: (END_HOUR - START_HOUR) * 2 + 1 }, (_, i) => {
-  const hour = START_HOUR + Math.floor(i / 2);
-  const minute = i % 2 === 0 ? '00' : '30';
-  return `${String(hour).padStart(2, '0')}:${minute}`;
-});
-
-const timeToPosition = (time: string): number => {
+const timeToMinutes = (time: string): number => {
   const [h, m] = time.split(':').map(Number);
-  const hoursFromStart = h - START_HOUR;
-  return hoursFromStart * 2 + (m / 30);
+  return h * 60 + m;
 };
 
-const ScheduledItemVertical = ({ course, section }: { course: Course, section: Section }) => {
+const minutesToHour = (minutes: number): number => {
+    return Math.floor(minutes / 60);
+}
+
+const ScheduledItemVertical = ({ course, section, startHour }: { course: Course, section: Section, startHour: number }) => {
+  const timeToPosition = (time: string): number => {
+    const [h, m] = time.split(':').map(Number);
+    const hoursFromStart = h - startHour;
+    return hoursFromStart * 2 + (m / 30);
+  };
+  
   const events = [];
   if (section.lecture) events.push({ type: 'Lecture', time: section.lecture });
   if (section.lab) events.push({ type: 'Lab', time: section.lab });
@@ -65,35 +66,51 @@ const ScheduledItemVertical = ({ course, section }: { course: Course, section: S
   });
 };
 
-const VerticalLayout = ({ scheduledItems }: { scheduledItems: { course: Course; section: Section; }[] }) => (
-  <div className="grid grid-cols-[auto_repeat(5,1fr)] gap-px bg-border rounded-lg overflow-hidden border">
-    {/* Corner */}
-    <div className="bg-card p-2"></div>
-    {/* Day Headers */}
-    {ALL_DAYS.map(day => (
-      <div key={day} className="bg-card text-center font-bold p-2 text-primary-foreground">{day}</div>
-    ))}
+const VerticalLayout = ({ scheduledItems, startHour, endHour }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number }) => {
+    const timeSlots = Array.from({ length: (endHour - startHour) * 2 + 1 }, (_, i) => {
+        const hour = startHour + Math.floor(i / 2);
+        const minute = i % 2 === 0 ? '00' : '30';
+        return `${String(hour).padStart(2, '0')}:${minute}`;
+    });
 
-    {/* Time Slots and Grid */}
-    {timeSlots.map((time, index) => (
-      <React.Fragment key={time}>
-        <div className="row-start-auto col-start-1 bg-card text-right text-xs pr-2 text-muted-foreground relative -top-2">{time.endsWith('00') ? time : ''}</div>
-        {index < timeSlots.length - 1 && <div className="col-start-2 col-span-5 h-px bg-border" style={{ gridRowStart: index + 2 }} />}
-      </React.Fragment>
-    ))}
+    const gridRowCount = (endHour - startHour) * 2;
 
-    <div className="col-start-2 col-end-7 row-start-2 row-end-[21] grid grid-cols-5 grid-rows-[repeat(18,minmax(0,1fr))] relative">
-        {ALL_DAYS.slice(0, -1).map((_, i) => (
-            <div key={`v-line-${i}`} className="row-span-full w-px bg-border absolute h-full" style={{ left: `calc(${(100/5) * (i+1)}%)` }} />
+    return (
+      <div className="grid grid-cols-[auto_repeat(5,1fr)] gap-px bg-border rounded-lg overflow-hidden border">
+        {/* Corner */}
+        <div className="bg-card p-2"></div>
+        {/* Day Headers */}
+        {ALL_DAYS.map(day => (
+          <div key={day} className="bg-card text-center font-bold p-2 text-primary-foreground">{day}</div>
         ))}
-        {scheduledItems.map(item => <ScheduledItemVertical key={`${item.course.id}-${item.section.id}`} {...item} />)}
-    </div>
-  </div>
-);
 
-const HorizontalLayout = ({ scheduledItems }: { scheduledItems: { course: Course; section: Section; }[] }) => {
-    const numTimeSlots = (END_HOUR - START_HOUR) * 2; // 30-min intervals
-    const timeLabels = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+        {/* Time Slots and Grid */}
+        {timeSlots.map((time, index) => (
+          <React.Fragment key={time}>
+            <div className="row-start-auto col-start-1 bg-card text-right text-xs pr-2 text-muted-foreground relative -top-2">{time.endsWith('00') ? time : ''}</div>
+            {index < timeSlots.length - 1 && <div className="col-start-2 col-span-5 h-px bg-border" style={{ gridRowStart: index + 2 }} />}
+          </React.Fragment>
+        ))}
+
+        <div className="col-start-2 col-end-7 row-start-2 row-end-[--grid-row-end] grid grid-cols-5 grid-rows-[--grid-rows] relative" style={{'--grid-row-end': gridRowCount + 2, '--grid-rows': `repeat(${gridRowCount},minmax(0,1fr))` } as React.CSSProperties}>
+            {ALL_DAYS.slice(0, -1).map((_, i) => (
+                <div key={`v-line-${i}`} className="row-span-full w-px bg-border absolute h-full" style={{ left: `calc(${(100/5) * (i+1)}%)` }} />
+            ))}
+            {scheduledItems.map(item => <ScheduledItemVertical key={`${item.course.id}-${item.section.id}`} {...item} startHour={startHour} />)}
+        </div>
+      </div>
+    );
+}
+
+const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number }) => {
+    const timeToPosition = (time: string): number => {
+        const [h, m] = time.split(':').map(Number);
+        const hoursFromStart = h - startHour;
+        return hoursFromStart * 2 + (m / 30);
+    };
+
+    const numTimeSlots = (endHour - startHour) * 2;
+    const timeLabels = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
 
   return (
     <div className="grid grid-cols-[auto_1fr] grid-rows-[auto_repeat(5,minmax(6rem,auto))] gap-px bg-border rounded-lg overflow-hidden border">
@@ -164,16 +181,50 @@ const HorizontalLayout = ({ scheduledItems }: { scheduledItems: { course: Course
 
 
 export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
-  const scheduledItems: { course: Course; section: Section; }[] = [];
-  for (const courseId in schedule) {
-    const course = courses.find(c => c.id === courseId);
-    if (course) {
-      const section = course.sections.find(s => s.id === schedule[courseId].sectionId);
-      if (section) {
-        scheduledItems.push({ course, section });
+  const scheduledItems: { course: Course; section: Section; }[] = useMemo(() => {
+    const items: { course: Course; section: Section; }[] = [];
+    for (const courseId in schedule) {
+      const course = courses.find(c => c.id === courseId);
+      if (course) {
+        const section = course.sections.find(s => s.id === schedule[courseId].sectionId);
+        if (section) {
+          items.push({ course, section });
+        }
       }
     }
-  }
+    return items;
+  }, [courses, schedule]);
+  
+  const {startHour, endHour} = useMemo(() => {
+    if(scheduledItems.length === 0) {
+        return { startHour: 8, endHour: 17 };
+    }
+
+    let minMinute = 8 * 60; // default 8am
+    let maxMinute = 17 * 60; // default 5pm
+
+    scheduledItems.forEach(({section}) => {
+        const times = [section.lecture];
+        if(section.lab) times.push(section.lab);
+
+        times.forEach(time => {
+            const start = timeToMinutes(time.startTime);
+            const end = timeToMinutes(time.endTime);
+            if(start < minMinute) minMinute = start;
+            if(end > maxMinute) maxMinute = end;
+        })
+    });
+    
+    // Round to nearest full hour and add padding
+    let startH = minutesToHour(minMinute);
+    let endH = Math.ceil(maxMinute / 60);
+
+    // Add padding
+    startH = Math.max(0, startH - 1);
+    endH = Math.min(24, endH + 1);
+
+    return {startHour: startH, endHour: endH};
+  }, [scheduledItems]);
 
   const renderSummary = () => (
     <div className="mt-8">
@@ -203,8 +254,8 @@ export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
       <Card>
         <CardContent className="p-4 md:p-6 overflow-x-auto">
           {layout === 'vertical' ? 
-            <VerticalLayout scheduledItems={scheduledItems} /> : 
-            <HorizontalLayout scheduledItems={scheduledItems} />}
+            <VerticalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} /> : 
+            <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} />}
         </CardContent>
       </Card>
       
