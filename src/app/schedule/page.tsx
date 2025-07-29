@@ -8,7 +8,7 @@ import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
 import { AiSuggestions } from '@/components/ai-suggestions';
 import { Logo } from '@/components/logo';
-import type { Course, Schedule, SectionTime } from '@/lib/types';
+import type { Course, Schedule, Section } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { suggestScheduleWorkarounds } from '@/ai/flows/suggest-schedule-workarounds';
 
@@ -16,8 +16,7 @@ export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
-  // Locking is disabled with the new data structure for now.
-  const [lockedSections, setLockedSections] = useState({});
+  const [lockedSections, setLockedSections] = useState<Record<string, string>>({});
   
   const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -38,10 +37,10 @@ export default function SchedulePage() {
   }, []);
 
   useEffect(() => {
-    if (courses.length > 0) {
+    if (isMounted && courses.length > 0) {
       runScheduler();
     }
-  }, [courses]); // lockedSections removed for now
+  }, [courses, isMounted]);
 
   const runScheduler = async () => {
     setIsLoading(true);
@@ -55,19 +54,15 @@ export default function SchedulePage() {
       setSchedules([]);
       setIsAiLoading(true);
       try {
-        const formattedCourses = courses.map(c => {
-            const sections = [c.lecture].concat(c.lab ? [c.lab] : []).map((s, index) => ({
-                days: s.days.map(d => d as 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu'),
-                startTime: s.startTime,
-                endTime: s.endTime,
-                type: (index === 0 ? 'Lecture' : 'Lab') as 'Lecture' | 'Lab',
-            }));
-
-            return {
-                name: c.name,
-                sections: sections,
-            }
-        });
+        const formattedCourses = courses.flatMap(c => 
+            c.sections.map(s => ({
+                name: `${c.name} - ${s.name}`,
+                sections: [
+                    { ...s.lecture, type: 'Lecture' as const, days: s.lecture.days.map(d => d as 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu') },
+                    ...(s.lab ? [{ ...s.lab, type: 'Lab' as const, days: s.lab.days.map(d => d as 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu') }] : [])
+                ]
+            }))
+        );
         const result = await suggestScheduleWorkarounds({ courses: formattedCourses });
         setAiSuggestions(result.suggestions);
       } catch (error) {
@@ -82,7 +77,6 @@ export default function SchedulePage() {
   
   const currentSchedule = useMemo(() => schedules[currentScheduleIndex], [schedules, currentScheduleIndex]);
 
-  // Locking and section changing is more complex now, disabling for this refactor.
   const handleLockSection = (courseId: string, sectionId: string) => {};
   const handleSectionChange = (courseId: string, newSectionId: string) => {};
 

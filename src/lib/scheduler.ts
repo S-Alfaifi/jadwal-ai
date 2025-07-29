@@ -1,4 +1,4 @@
-import type { Course, SectionTime, Schedule, Day } from './types';
+import type { Course, SectionTime, Schedule, Day, Section } from './types';
 
 function timeToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
@@ -20,56 +20,84 @@ function doSectionsConflict(section1: SectionTime, section2: SectionTime): boole
   return start1 < end2 && start2 < end1;
 }
 
-// This function needs a complete overhaul as the data structure is different.
-// The core logic of backtracking remains, but we are not iterating through sections anymore.
-// For now, we'll assume each course has one lecture and one optional lab, so there's nothing to "schedule" or "select".
-// We just need to check for conflicts. A "valid" schedule is just the single combination of all defined lectures/labs.
-
-function getSectionsForSchedule(courses: Course[], schedule: Schedule): SectionTime[] {
-    const sections: SectionTime[] = [];
+function getSectionsFromSchedule(courses: Course[], schedule: Schedule): Section[] {
+    const sections: Section[] = [];
     for(const courseId in schedule) {
         const course = courses.find(c => c.id === courseId);
         if(!course) continue;
 
-        if (course.lecture.id === schedule[courseId].lecture) {
-            sections.push(course.lecture);
-        }
-        if (course.lab && course.lab.id === schedule[courseId].lab) {
-            sections.push(course.lab);
+        const section = course.sections.find(s => s.id === schedule[courseId].sectionId);
+        if (section) {
+            sections.push(section);
         }
     }
     return sections;
 }
 
 
-// A simplified generator that returns one schedule if no conflicts exist.
 export function generateSchedules(courses: Course[], lockedSections: any = {}): Schedule[] {
-  const allSections: {courseId: string, section: SectionTime, type: 'lecture' | 'lab'}[] = [];
-  
-  courses.forEach(course => {
-    allSections.push({courseId: course.id, section: course.lecture, type: 'lecture'});
-    if(course.lab) {
-        allSections.push({courseId: course.id, section: course.lab, type: 'lab'});
-    }
-  });
+  const schedules: Schedule[] = [];
+  const coursesWithSections = courses.filter(c => c.sections.length > 0);
 
-  for (let i = 0; i < allSections.length; i++) {
-    for (let j = i + 1; j < allSections.length; j++) {
-      if (doSectionsConflict(allSections[i].section, allSections[j].section)) {
-        // If there is any conflict, we cannot generate a schedule with the current model.
-        return [];
+  function findSchedules(courseIndex: number, currentSchedule: Schedule) {
+    if (courseIndex === coursesWithSections.length) {
+      schedules.push({ ...currentSchedule });
+      return;
+    }
+
+    const course = coursesWithSections[courseIndex];
+    const availableSections = course.sections;
+
+    for (const section of availableSections) {
+      const scheduleWithNewSection: Schedule = {
+        ...currentSchedule,
+        [course.id]: { sectionId: section.id },
+      };
+
+      const scheduledSections = getSectionsFromSchedule(courses, scheduleWithNewSection);
+      let hasConflict = false;
+
+      // Check for conflicts
+      for (let i = 0; i < scheduledSections.length; i++) {
+        for (let j = i + 1; j < scheduledSections.length; j++) {
+            const sectionA = scheduledSections[i];
+            const sectionB = scheduledSections[j];
+            
+            // Check lecture vs lecture
+            if (doSectionsConflict(sectionA.lecture, sectionB.lecture)) {
+                hasConflict = true;
+                break;
+            }
+            // Check lecture vs lab
+            if(sectionA.lab && doSectionsConflict(sectionA.lab, sectionB.lecture)) {
+                hasConflict = true;
+                break;
+            }
+            if(sectionB.lab && doSectionsConflict(sectionA.lecture, sectionB.lab)) {
+                hasConflict = true;
+                break;
+            }
+            // Check lab vs lab
+            if(sectionA.lab && sectionB.lab && doSectionsConflict(sectionA.lab, sectionB.lab)) {
+                hasConflict = true;
+                break;
+            }
+        }
+        if(hasConflict) break;
+      }
+      
+      // Also check conflict within the section itself (lecture vs lab)
+      if(section.lab && doSectionsConflict(section.lecture, section.lab)) {
+        hasConflict = true;
+      }
+
+
+      if (!hasConflict) {
+        findSchedules(courseIndex + 1, scheduleWithNewSection);
       }
     }
   }
 
-  // If no conflicts, construct the single valid schedule.
-  const schedule: Schedule = {};
-  courses.forEach(course => {
-    schedule[course.id] = {
-      lecture: course.lecture.id,
-      lab: course.lab?.id,
-    }
-  });
-
-  return [schedule];
+  findSchedules(0, {});
+  return schedules;
 }

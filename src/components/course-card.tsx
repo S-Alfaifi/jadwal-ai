@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Clock, CalendarDays, BookText, FlaskConical } from "lucide-react";
-import type { Course, SectionTime } from "@/lib/types";
+import { Edit, Trash2, Clock, CalendarDays, BookText, FlaskConical,ChevronDown, ChevronUp } from "lucide-react";
+import type { Course, SectionTime, Section } from "@/lib/types";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 
 interface CourseCardProps {
   course: Course;
@@ -31,6 +32,7 @@ const SectionTimeDisplay = ({ section, type }: { section: SectionTime, type: 'Le
   </div>
 );
 
+
 export function CourseCard({ course, onEdit, onDelete }: CourseCardProps) {
   return (
     <Card className="overflow-hidden transition-all hover:shadow-md">
@@ -40,7 +42,7 @@ export function CourseCard({ course, onEdit, onDelete }: CourseCardProps) {
              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: course.color }} />
             {course.name}
           </CardTitle>
-          <CardDescription className="mt-1">{course.lab ? "Lecture & Lab" : "Lecture Only"}</CardDescription>
+           <CardDescription className="mt-1">{course.sections.length} Section(s)</CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={onEdit} aria-label={`Edit course ${course.name}`}>
@@ -52,10 +54,21 @@ export function CourseCard({ course, onEdit, onDelete }: CourseCardProps) {
         </div>
       </CardHeader>
       <CardContent className="p-6 text-sm">
-        <div className="space-y-4">
-          <SectionTimeDisplay section={course.lecture} type="Lecture" />
-          {course.lab && <SectionTimeDisplay section={course.lab} type="Lab" />}
-        </div>
+         <Accordion type="single" collapsible className="w-full">
+            {course.sections.map((section, index) => (
+              <AccordionItem value={`item-${index}`} key={section.id}>
+                <AccordionTrigger>
+                  <span className="font-medium">{section.name}</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                    <div className="space-y-4">
+                        <SectionTimeDisplay section={section.lecture} type="Lecture" />
+                        {section.lab && <SectionTimeDisplay section={section.lab} type="Lab" />}
+                    </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+        </Accordion>
       </CardContent>
     </Card>
   );

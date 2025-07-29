@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import type { Course, Schedule, SectionTime, Day } from '@/lib/types';
+import type { Course, Schedule, Section, Day } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
@@ -11,9 +11,9 @@ import { cn } from '@/lib/utils';
 interface ScheduleViewProps {
   courses: Course[];
   schedule: Schedule;
-  lockedSections: {}; // Simplified for now
-  onLockToggle: (courseId: string, sectionType: 'lecture' | 'lab') => void;
-  onSectionChange: (courseId: string, newSectionId: string) => void; // This needs rethinking
+  lockedSections: Record<string, string>;
+  onLockToggle: (courseId: string, sectionId: string) => void;
+  onSectionChange: (courseId: string, newSectionId: string) => void;
 }
 
 const START_HOUR = 8;
@@ -31,16 +31,14 @@ const timeToRow = (time: string): number => {
 };
 
 export function ScheduleView({ courses, schedule, lockedSections, onLockToggle, onSectionChange }: ScheduleViewProps) {
-  const scheduledItems: { course: Course; section: SectionTime; type: 'Lecture' | 'Lab' }[] = [];
+  const scheduledItems: { course: Course; section: Section; }[] = [];
   for (const courseId in schedule) {
     const course = courses.find(c => c.id === courseId);
     if (course) {
-        if (schedule[courseId].lecture) {
-            scheduledItems.push({ course, section: course.lecture, type: 'Lecture' });
-        }
-        if (schedule[courseId].lab && course.lab) {
-             scheduledItems.push({ course, section: course.lab, type: 'Lab' });
-        }
+      const section = course.sections.find(s => s.id === schedule[courseId].sectionId);
+      if (section) {
+        scheduledItems.push({ course, section });
+      }
     }
   }
 
@@ -74,38 +72,44 @@ export function ScheduleView({ courses, schedule, lockedSections, onLockToggle, 
               ))}
               
               {/* Scheduled Items */}
-              {scheduledItems.map(({ course, section, type }) => {
-                const startRow = timeToRow(section.startTime);
-                const endRow = timeToRow(section.endTime);
-                // Locking logic simplified/disabled for now
-                const isLocked = false; 
+              {scheduledItems.map(({ course, section }) => {
+                const isLocked = lockedSections[course.id] === section.id;
+                const events = [];
+                if(section.lecture) events.push({type: 'Lecture', time: section.lecture});
+                if(section.lab) events.push({type: 'Lab', time: section.lab});
 
-                return section.days.map(day => {
-                  const dayIndex = ALL_DAYS.indexOf(day);
-                  return (
-                    <div
-                      key={`${course.id}-${section.id}-${day}`}
-                      className="md:col-start-auto row-span-1 md:row-span-1 rounded-lg p-2 md:p-3 flex flex-col justify-between relative overflow-hidden transition-all duration-300 ease-in-out"
-                      style={{ 
-                        gridColumnStart: dayIndex + 1,
-                        gridRow: `${startRow} / ${endRow}`,
-                        backgroundColor: course.color,
-                      }}
-                    >
-                      <div>
-                        <p className="font-bold text-sm md:text-base text-black/80">{course.name}</p>
-                        <p className="text-xs md:text-sm text-black/70">{type}</p>
+                return events.map(({ type, time }) => {
+                  const startRow = timeToRow(time.startTime);
+                  const endRow = timeToRow(time.endTime);
+
+                  return time.days.map(day => {
+                    const dayIndex = ALL_DAYS.indexOf(day);
+                    return (
+                      <div
+                        key={`${course.id}-${section.id}-${day}-${type}`}
+                        className="md:col-start-auto row-span-1 md:row-span-1 rounded-lg p-2 md:p-3 flex flex-col justify-between relative overflow-hidden transition-all duration-300 ease-in-out"
+                        style={{ 
+                          gridColumnStart: dayIndex + 1,
+                          gridRow: `${startRow} / ${endRow}`,
+                          backgroundColor: course.color,
+                        }}
+                      >
+                        <div>
+                          <p className="font-bold text-sm md:text-base text-black/80">{course.name}</p>
+                          <p className="text-xs md:text-sm text-black/70">{section.name}</p>
+                           <p className="text-xs md:text-sm text-black/70 font-semibold">{type}</p>
+                        </div>
+                        <div className="text-xs text-black/60 hidden md:block">
+                          {time.startTime} - {time.endTime}
+                        </div>
+                         {/* Locking disabled for now
+                        <button onClick={() => onLockToggle(course.id, section.id)} className="absolute top-2 right-2 p-1 rounded-full bg-white/30 hover:bg-white/50 transition-colors">
+                          {isLocked ? <Lock className="h-4 w-4 text-black/70"/> : <Unlock className="h-4 w-4 text-black/70"/>}
+                        </button>
+                        */}
                       </div>
-                      <div className="text-xs text-black/60 hidden md:block">
-                        {section.startTime} - {section.endTime}
-                      </div>
-                       {/* Locking disabled for now
-                      <button onClick={() => onLockToggle(course.id, type === 'Lecture' ? 'lecture' : 'lab')} className="absolute top-2 right-2 p-1 rounded-full bg-white/30 hover:bg-white/50 transition-colors">
-                        {isLocked ? <Lock className="h-4 w-4 text-black/70"/> : <Unlock className="h-4 w-4 text-black/70"/>}
-                      </button>
-                      */}
-                    </div>
-                  );
+                    );
+                  })
                 })
               })}
             </div>
@@ -117,18 +121,19 @@ export function ScheduleView({ courses, schedule, lockedSections, onLockToggle, 
       <div className="mt-8">
         <h3 className="text-2xl font-headline font-bold mb-4">Course Summary</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {courses.map(course => {
+          {scheduledItems.map(({ course, section }) => {
             return(
-              <Card key={course.id}>
+              <Card key={`${course.id}-${section.id}`}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-3">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: course.color }} />
                       {course.name}
                     </CardTitle>
+                    <CardDescription>{section.name}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm text-muted-foreground">
-                    <p><b>Lecture:</b> {course.lecture.days.join(', ')} {course.lecture.startTime}-{course.lecture.endTime}</p>
-                    {course.lab && <p><b>Lab:</b> {course.lab.days.join(', ')} {course.lab.startTime}-{course.lab.endTime}</p>}
+                    <p><b>Lecture:</b> {section.lecture.days.join(', ')} {section.lecture.startTime}-{section.lecture.endTime}</p>
+                    {section.lab && <p><b>Lab:</b> {section.lab.days.join(', ')} {section.lab.startTime}-{section.lab.endTime}</p>}
                   </CardContent>
               </Card>
             )
