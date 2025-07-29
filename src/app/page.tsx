@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Course, Section } from "@/lib/types";
 import { generatePastelColor } from "@/lib/colors";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type CourseFormData = Omit<Course, 'id' | 'color' | 'sections' | 'isEnabled'> & { id?: string, sections: (Omit<Section, 'id' | 'isEnabled'> & {id?: string})[] };
 
@@ -146,8 +147,9 @@ export default function Home() {
   return (
     <TooltipProvider>
       <div className="flex flex-col min-h-screen">
-        <header className="py-6 px-4 md:px-8 border-b">
+        <header className="py-6 px-4 md:px-8 border-b flex justify-between items-center">
           <Logo />
+          <ThemeToggle />
         </header>
         
         <main className="flex-grow container mx-auto p-4 md:p-8">

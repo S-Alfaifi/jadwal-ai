@@ -13,6 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Course, Schedule, GenerationResult, Conflict } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -114,8 +115,8 @@ export default function SchedulePage() {
     try {
         const dataUrl = await toPng(element, { 
             cacheBust: true, 
-            backgroundColor: '#ffffff',
-            pixelRatio: 2, // Use a higher pixel ratio for better quality and to avoid cropping
+            backgroundColor: 'hsl(var(--card))',
+            pixelRatio: 2,
         });
         const link = document.createElement('a');
         link.download = 'schedule.png';
@@ -200,19 +201,22 @@ export default function SchedulePage() {
        <header className="py-6 px-4 md:px-8 border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto flex justify-between items-center">
             <Logo />
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" onClick={() => router.push('/')}>
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back to Edit
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Return to the course selection page</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" onClick={() => router.push('/')}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Edit
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Return to the course selection page</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
         </div>
       </header>
 
