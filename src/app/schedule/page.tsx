@@ -9,37 +9,18 @@ import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
 import { Logo } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { Course, Schedule } from '@/lib/types';
+import type { Course, Schedule, GenerationResult } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null);
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
-
-  const getCombinations = <T,>(array: T[], size: number): T[][] => {
-    const result: T[][] = [];
-    function combinationUtil(start: number, chosen: T[]) {
-      if (chosen.length === size) {
-        result.push([...chosen]);
-        return;
-      }
-      if (start >= array.length) {
-        return;
-      }
-      chosen.push(array[start]);
-      combinationUtil(start + 1, chosen);
-      chosen.pop();
-      combinationUtil(start + 1, chosen);
-    }
-    combinationUtil(0, []);
-    return result;
-  };
 
   const runScheduler = useCallback(() => {
     const activeCourses = courses
@@ -58,35 +39,10 @@ export default function SchedulePage() {
     setIsLoading(true);
     setCurrentScheduleIndex(0);
     
+    // Using setTimeout to allow the UI to update to the loading state
     setTimeout(() => {
-        let generatedSchedules: Schedule[] = [];
-
-        // Try with all courses first
-        generatedSchedules = generateSchedules(activeCourses, {});
-
-        // If no schedule, try removing courses one by one
-        if (generatedSchedules.length === 0 && activeCourses.length > 1) {
-            for (let i = activeCourses.length - 1; i >= 1; i--) {
-                const courseCombinations = getCombinations(activeCourses, i);
-                for (const combo of courseCombinations) {
-                    const partialSchedules = generateSchedules(combo, {});
-                    if (partialSchedules.length > 0) {
-                        generatedSchedules.push(...partialSchedules);
-                    }
-                }
-                if (generatedSchedules.length > 0) {
-                    break;
-                }
-            }
-        }
-
-        if (generatedSchedules.length > 0) {
-            const uniqueSchedules = [...new Set(generatedSchedules.map(s => JSON.stringify(s)))].map(s => JSON.parse(s));
-            setSchedules(uniqueSchedules);
-        } else {
-            setSchedules([]);
-        }
-        
+        const result = generateSchedules(activeCourses);
+        setGenerationResult(result);
         setIsLoading(false);
     }, 50);
   }, [courses]);
@@ -110,19 +66,30 @@ export default function SchedulePage() {
     }
   }, [isMounted, courses, runScheduler]);
 
-  const { currentSchedule, includedCoursesInSchedule, excludedCoursesInSchedule } = useMemo(() => {
+  const { schedules = [], excludedCourses = [] } = generationResult || {};
+
+  const { currentSchedule, includedCoursesInSchedule, partialScheduleReason } = useMemo(() => {
     if (!schedules || schedules.length === 0) {
-      return { currentSchedule: null, includedCoursesInSchedule: [], excludedCoursesInSchedule: [] };
+      return { currentSchedule: null, includedCoursesInSchedule: [], partialScheduleReason: null };
     }
     const schedule = schedules[currentScheduleIndex];
     if (!schedule) {
-       return { currentSchedule: null, includedCoursesInSchedule: [], excludedCoursesInSchedule: [] };
+       return { currentSchedule: null, includedCoursesInSchedule: [], partialScheduleReason: null };
     }
+    
     const includedIds = Object.keys(schedule);
     const included = courses.filter(c => includedIds.includes(c.id));
-    const excluded = courses.filter(c => c.isEnabled && !includedIds.includes(c.id));
-    return { currentSchedule: schedule, includedCoursesInSchedule: included, excludedCoursesInSchedule: excluded };
-  }, [schedules, currentScheduleIndex, courses]);
+    
+    let reason = null;
+    if (excludedCourses.length > 0) {
+        const examConflict = excludedCourses.some(excluded => 
+            included.some(includedCourse => includedCourse.finalExamPeriod && excluded.finalExamPeriod === includedCourse.finalExamPeriod)
+        );
+        reason = examConflict ? 'a final exam period conflict' : 'a time conflict';
+    }
+
+    return { currentSchedule: schedule, includedCoursesInSchedule: included, partialScheduleReason: reason };
+  }, [schedules, currentScheduleIndex, courses, excludedCourses]);
 
   if (!isMounted) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   
@@ -146,12 +113,13 @@ export default function SchedulePage() {
             onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
             onRegenerate={runScheduler}
           />
-           {excludedCoursesInSchedule.length > 0 && (
+           {excludedCourses.length > 0 && (
             <Alert className="mt-4 border-primary/50 text-primary-foreground">
               <Info className="h-4 w-4" />
               <AlertTitle>Partial Schedule Generated</AlertTitle>
               <AlertDescription>
-                We couldn't fit all your enabled courses. The schedule below works by excluding: <strong>{excludedCoursesInSchedule.map(c => c.name).join(', ')}</strong>.
+                We couldn't fit all your enabled courses due to {partialScheduleReason || 'conflicts'}. 
+                This schedule works by excluding: <strong>{excludedCourses.map(c => c.name).join(', ')}</strong>.
               </AlertDescription>
             </Alert>
           )}

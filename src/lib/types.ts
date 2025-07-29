@@ -20,6 +20,7 @@ export interface Section {
 export interface Course {
   id: string;
   name: string;
+  finalExamPeriod?: number;
   sections: Section[];
   color: string;
   isEnabled: boolean;
@@ -29,4 +30,15 @@ export interface Schedule {
   [courseId: string]: {
     sectionId: string;
   };
+}
+
+export type Conflict = {
+    type: 'time' | 'exam';
+    courses: string[];
+};
+
+export interface GenerationResult {
+    schedules: Schedule[];
+    conflicts: Conflict[];
+    excludedCourses: Course[];
 }

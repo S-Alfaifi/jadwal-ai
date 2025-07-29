@@ -8,11 +8,10 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Course, Day } from "@/lib/types";
+import type { Course } from "@/lib/types";
 import { ALL_DAYS } from "@/lib/types";
-import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 
 const sectionTimeSchema = z.object({
@@ -42,6 +41,7 @@ const sectionSchema = z.object({
 
 const courseSchema = z.object({
   name: z.string().min(2, "Course name must be at least 2 characters."),
+  finalExamPeriod: z.coerce.number().optional(),
   sections: z.array(sectionSchema).min(1, "At least one section is required."),
 });
 
@@ -56,7 +56,7 @@ export function AddCourseForm({ onSubmit, course }: AddCourseFormProps) {
   const { register, control, handleSubmit, formState: { errors }, watch, setValue } = useForm<CourseFormValues>({
     resolver: zodResolver(courseSchema),
     defaultValues: course ? 
-      { name: course.name, sections: course.sections.map(s => ({...s, hasLab: !!s.lab})) } :
+      { name: course.name, finalExamPeriod: course.finalExamPeriod, sections: course.sections.map(s => ({...s, hasLab: !!s.lab})) } :
       { name: "", sections: [{ id: `section_${Date.now()}`, name: "Section 1", lecture: { days: [], startTime: "09:00", endTime: "10:00" }, hasLab: false }] },
   });
 
@@ -144,11 +144,19 @@ export function AddCourseForm({ onSubmit, course }: AddCourseFormProps) {
 
   return (
     <form onSubmit={handleSubmit(processSubmit)} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="name">Course Name</Label>
-        <Input id="name" {...register("name")} placeholder="e.g. Introduction to AI" />
-        {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+      <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
+        <div className="space-y-2">
+            <Label htmlFor="name">Course Name</Label>
+            <Input id="name" {...register("name")} placeholder="e.g. Introduction to AI" />
+            {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="finalExamPeriod">Final Exam Period</Label>
+            <Input id="finalExamPeriod" type="number" {...register("finalExamPeriod")} placeholder="e.g. 5" />
+            {errors.finalExamPeriod && <p className="text-sm text-destructive">{errors.finalExamPeriod.message}</p>}
+        </div>
       </div>
+
 
       <ScrollArea className="h-[400px] pr-4">
         <div className="space-y-6">
@@ -208,5 +216,3 @@ export function AddCourseForm({ onSubmit, course }: AddCourseFormProps) {
     </form>
   );
 }
-
-    

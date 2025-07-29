@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Clock, CalendarDays, BookText, FlaskConical } from "lucide-react";
+import { Edit, Trash2, Clock, CalendarDays, BookText, FlaskConical, AlertCircle } from "lucide-react";
 import type { Course, SectionTime, Section } from "@/lib/types";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 import { Switch } from "./ui/switch";
@@ -48,7 +48,15 @@ export function CourseCard({ course, onEdit, onDelete, onToggleCourse, onToggleS
              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: course.color }} />
             {course.name}
           </CardTitle>
-           <CardDescription className="mt-1">{course.sections.length} Section(s)</CardDescription>
+           <CardDescription className="mt-1 flex items-center gap-4">
+                <span>{course.sections.length} Section(s)</span>
+                {course.finalExamPeriod && (
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <AlertCircle className="h-3 w-3" />
+                        Final Exam Period: {course.finalExamPeriod}
+                    </span>
+                )}
+            </CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <Switch
