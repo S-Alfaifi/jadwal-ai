@@ -2,21 +2,24 @@ export type Day = 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu';
 
 export const ALL_DAYS: Day[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
 
-export interface Section {
+export interface SectionTime {
   id: string;
   days: Day[];
   startTime: string; // "HH:mm"
   endTime: string; // "HH:mm"
-  type: 'Lecture' | 'Lab';
 }
 
 export interface Course {
   id:string;
   name: string;
-  sections: Section[];
+  lecture: SectionTime;
+  lab?: SectionTime;
   color: string;
 }
 
 export interface Schedule {
-  [courseId: string]: string; // courseId -> sectionId
+  [courseId: string]: {
+    lecture: string;
+    lab?: string;
+  }; 
 }

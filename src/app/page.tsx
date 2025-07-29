@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { Course } from "@/lib/types";
 import { generatePastelColor } from "@/lib/colors";
 
+type CourseFormData = Omit<Course, 'id' | 'color'> & { id?: string };
+
 export default function Home() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,7 +54,7 @@ export default function Home() {
     });
   };
 
-  const handleFormSubmit = (data: Omit<Course, 'id' | 'color'> & { id?: string }) => {
+  const handleFormSubmit = (data: CourseFormData) => {
     if (editingCourse) {
       setCourses(
         courses.map((c) => (c.id === editingCourse.id ? { ...c, ...data, id: c.id } : c))
@@ -66,7 +68,8 @@ export default function Home() {
         ...data, 
         id: `course_${Date.now()}`,
         color: generatePastelColor(courses.length),
-        sections: data.sections.map((s, index) => ({ ...s, id: `section_${Date.now()}_${index}` }))
+        lecture: { ...data.lecture, id: `lecture_${Date.now()}` },
+        lab: data.lab ? { ...data.lab, id: `lab_${Date.now()}` } : undefined,
       };
       setCourses([...courses, newCourse]);
       toast({
@@ -105,7 +108,7 @@ export default function Home() {
             Create Your Schedule
           </h1>
           <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
-            Add your courses and sections below. Our intelligent planner will then generate conflict-free schedules for you.
+            Add your courses and their lecture/lab times below. Our intelligent planner will then generate conflict-free schedules for you.
           </p>
         </div>
 
@@ -157,7 +160,7 @@ export default function Home() {
           <DialogHeader>
             <DialogTitle>{editingCourse ? "Edit Course" : "Add a New Course"}</DialogTitle>
             <DialogDescription>
-              Fill in the details for the course and its sections.
+              Fill in the details for the course lecture and lab times.
             </DialogDescription>
           </DialogHeader>
           <AddCourseForm

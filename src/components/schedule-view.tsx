@@ -1,20 +1,19 @@
 "use client";
 
 import React from 'react';
-import type { Course, Schedule, Section, Day } from '@/lib/types';
+import type { Course, Schedule, SectionTime, Day } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
-import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
-import { Lock, Unlock, Clock, MapPin } from 'lucide-react';
+import { Lock, Unlock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ScheduleViewProps {
   courses: Course[];
   schedule: Schedule;
-  lockedSections: Schedule;
-  onLockToggle: (courseId: string, sectionId: string) => void;
-  onSectionChange: (courseId: string, newSectionId: string) => void;
+  lockedSections: {}; // Simplified for now
+  onLockToggle: (courseId: string, sectionType: 'lecture' | 'lab') => void;
+  onSectionChange: (courseId: string, newSectionId: string) => void; // This needs rethinking
 }
 
 const START_HOUR = 8;
@@ -32,14 +31,16 @@ const timeToRow = (time: string): number => {
 };
 
 export function ScheduleView({ courses, schedule, lockedSections, onLockToggle, onSectionChange }: ScheduleViewProps) {
-  const scheduledItems: { course: Course; section: Section }[] = [];
+  const scheduledItems: { course: Course; section: SectionTime; type: 'Lecture' | 'Lab' }[] = [];
   for (const courseId in schedule) {
     const course = courses.find(c => c.id === courseId);
     if (course) {
-      const section = course.sections.find(s => s.id === schedule[courseId]);
-      if (section) {
-        scheduledItems.push({ course, section });
-      }
+        if (schedule[courseId].lecture) {
+            scheduledItems.push({ course, section: course.lecture, type: 'Lecture' });
+        }
+        if (schedule[courseId].lab && course.lab) {
+             scheduledItems.push({ course, section: course.lab, type: 'Lab' });
+        }
     }
   }
 
@@ -73,10 +74,11 @@ export function ScheduleView({ courses, schedule, lockedSections, onLockToggle, 
               ))}
               
               {/* Scheduled Items */}
-              {scheduledItems.map(({ course, section }) => {
+              {scheduledItems.map(({ course, section, type }) => {
                 const startRow = timeToRow(section.startTime);
                 const endRow = timeToRow(section.endTime);
-                const isLocked = lockedSections[course.id] === section.id;
+                // Locking logic simplified/disabled for now
+                const isLocked = false; 
 
                 return section.days.map(day => {
                   const dayIndex = ALL_DAYS.indexOf(day);
@@ -92,14 +94,16 @@ export function ScheduleView({ courses, schedule, lockedSections, onLockToggle, 
                     >
                       <div>
                         <p className="font-bold text-sm md:text-base text-black/80">{course.name}</p>
-                        <p className="text-xs md:text-sm text-black/70">{section.type}</p>
+                        <p className="text-xs md:text-sm text-black/70">{type}</p>
                       </div>
                       <div className="text-xs text-black/60 hidden md:block">
                         {section.startTime} - {section.endTime}
                       </div>
-                      <button onClick={() => onLockToggle(course.id, section.id)} className="absolute top-2 right-2 p-1 rounded-full bg-white/30 hover:bg-white/50 transition-colors">
+                       {/* Locking disabled for now
+                      <button onClick={() => onLockToggle(course.id, type === 'Lecture' ? 'lecture' : 'lab')} className="absolute top-2 right-2 p-1 rounded-full bg-white/30 hover:bg-white/50 transition-colors">
                         {isLocked ? <Lock className="h-4 w-4 text-black/70"/> : <Unlock className="h-4 w-4 text-black/70"/>}
                       </button>
+                      */}
                     </div>
                   );
                 })
@@ -111,40 +115,20 @@ export function ScheduleView({ courses, schedule, lockedSections, onLockToggle, 
       
       {/* Bottom Section Summary */}
       <div className="mt-8">
-        <h3 className="text-2xl font-headline font-bold mb-4">Selected Sections</h3>
+        <h3 className="text-2xl font-headline font-bold mb-4">Course Summary</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {courses.map(course => {
-            const currentSectionId = schedule[course.id];
-            const isLocked = lockedSections[course.id] === currentSectionId;
             return(
-              <Card key={course.id} className={cn("transition-all", isLocked && "border-primary border-2")}>
+              <Card key={course.id}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-3">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: course.color }} />
                       {course.name}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Select
-                      value={currentSectionId}
-                      onValueChange={(newSectionId) => onSectionChange(course.id, newSectionId)}
-                      disabled={isLocked}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a section" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {course.sections.map((section, index) => (
-                          <SelectItem key={section.id} value={section.id}>
-                            Section {index + 1} ({section.days.join(', ')}) {section.startTime}-{section.endTime}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => onLockToggle(course.id, currentSectionId)}>
-                      {isLocked ? <Unlock className="mr-2 h-4 w-4" /> : <Lock className="mr-2 h-4 w-4" />}
-                      {isLocked ? "Unlock Section" : "Lock Section"}
-                    </Button>
+                  <CardContent className="space-y-2 text-sm text-muted-foreground">
+                    <p><b>Lecture:</b> {course.lecture.days.join(', ')} {course.lecture.startTime}-{course.lecture.endTime}</p>
+                    {course.lab && <p><b>Lab:</b> {course.lab.days.join(', ')} {course.lab.startTime}-{course.lab.endTime}</p>}
                   </CardContent>
               </Card>
             )

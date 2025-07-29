@@ -8,7 +8,7 @@ import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
 import { AiSuggestions } from '@/components/ai-suggestions';
 import { Logo } from '@/components/logo';
-import type { Course, Schedule, Section } from '@/lib/types';
+import type { Course, Schedule, SectionTime } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { suggestScheduleWorkarounds } from '@/ai/flows/suggest-schedule-workarounds';
 
@@ -16,7 +16,8 @@ export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
-  const [lockedSections, setLockedSections] = useState<Schedule>({});
+  // Locking is disabled with the new data structure for now.
+  const [lockedSections, setLockedSections] = useState({});
   
   const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -40,7 +41,7 @@ export default function SchedulePage() {
     if (courses.length > 0) {
       runScheduler();
     }
-  }, [courses, lockedSections]);
+  }, [courses]); // lockedSections removed for now
 
   const runScheduler = async () => {
     setIsLoading(true);
@@ -54,15 +55,19 @@ export default function SchedulePage() {
       setSchedules([]);
       setIsAiLoading(true);
       try {
-        const formattedCourses = courses.map(c => ({
-            name: c.name,
-            sections: c.sections.map(s => ({
-                days: s.days.map(d => d as 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu'), // type assertion
+        const formattedCourses = courses.map(c => {
+            const sections = [c.lecture].concat(c.lab ? [c.lab] : []).map((s, index) => ({
+                days: s.days.map(d => d as 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu'),
                 startTime: s.startTime,
                 endTime: s.endTime,
-                type: s.type,
-            }))
-        }));
+                type: (index === 0 ? 'Lecture' : 'Lab') as 'Lecture' | 'Lab',
+            }));
+
+            return {
+                name: c.name,
+                sections: sections,
+            }
+        });
         const result = await suggestScheduleWorkarounds({ courses: formattedCourses });
         setAiSuggestions(result.suggestions);
       } catch (error) {
@@ -77,25 +82,9 @@ export default function SchedulePage() {
   
   const currentSchedule = useMemo(() => schedules[currentScheduleIndex], [schedules, currentScheduleIndex]);
 
-  const handleLockSection = (courseId: string, sectionId: string) => {
-    setLockedSections(prev => {
-        const newLocked = {...prev};
-        if(newLocked[courseId] === sectionId) {
-            delete newLocked[courseId];
-        } else {
-            newLocked[courseId] = sectionId;
-        }
-        return newLocked;
-    });
-  };
-
-  const handleSectionChange = (courseId: string, newSectionId: string) => {
-    // A simple approach: find a schedule that matches this new choice
-    const newScheduleIndex = schedules.findIndex(s => s[courseId] === newSectionId);
-    if (newScheduleIndex !== -1) {
-      setCurrentScheduleIndex(newScheduleIndex);
-    }
-  };
+  // Locking and section changing is more complex now, disabling for this refactor.
+  const handleLockSection = (courseId: string, sectionId: string) => {};
+  const handleSectionChange = (courseId: string, newSectionId: string) => {};
 
   if (!isMounted) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
