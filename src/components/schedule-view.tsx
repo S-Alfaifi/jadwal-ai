@@ -12,6 +12,7 @@ interface ScheduleViewProps {
   lockedSections: Record<string, string>;
   onLockToggle: (courseId: string, sectionId: string) => void;
   onSectionChange: (courseId: string, newSectionId: string) => void;
+  layout: 'horizontal';
 }
 
 const timeToMinutes = (time: string): number => {
@@ -210,7 +211,7 @@ export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
     const startH = Math.floor(minMinute/60);
     const endH = Math.ceil(maxMinute/60);
 
-    return {startHour: startH, endHour: endH > startH ? endH : startH + 1};
+    return {startHour: startH, endHour: Math.max(endH, startH + 1)};
   }, [scheduledItems]);
 
   const renderSummary = () => (
@@ -251,4 +252,3 @@ export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
     </div>
   );
 }
-
