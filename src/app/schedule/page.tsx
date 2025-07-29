@@ -118,7 +118,7 @@ export default function SchedulePage() {
 
         const dataUrl = await toPng(element, {
             cacheBust: true,
-            skipFonts: true, // This is the key change to prevent the error
+            skipFonts: true,
             backgroundColor: backgroundColor,
             pixelRatio: 2,
         });
