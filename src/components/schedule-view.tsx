@@ -3,7 +3,7 @@
 import React from 'react';
 import type { Course, Schedule, Section, Day } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { Lock, Unlock } from 'lucide-react';
 import { cn } from '@/lib/utils';
