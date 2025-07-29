@@ -12,7 +12,6 @@ interface ScheduleViewProps {
   lockedSections: Record<string, string>;
   onLockToggle: (courseId: string, sectionId: string) => void;
   onSectionChange: (courseId: string, newSectionId: string) => void;
-  layout: 'vertical' | 'horizontal';
 }
 
 const timeToMinutes = (time: string): number => {
@@ -105,7 +104,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
             
             {/* Time Headers */}
             <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, 6rem)`}}>
-                 {timeSlots.map((time, index) => (
+                 {timeSlots.map((time) => (
                     <div key={time} className="text-center p-2 text-xs font-medium text-muted-foreground border-b border-r" >
                         {time.endsWith('00') ? time : ''}
                     </div>
@@ -126,10 +125,12 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                 {/* Background Grid Lines */}
                 {ALL_DAYS.map((day, dayIndex) => {
                      const totalTracksBefore = ALL_DAYS.slice(0, dayIndex).reduce((acc, curr) => acc + dayTrackCounts[curr], 0);
+                     const rowStart = totalTracksBefore + 1;
+                     const rowEnd = totalTracksBefore + dayTrackCounts[day] + 1;
                      return Array.from({length: timeSlots.length}).map((_, timeIndex) => (
                         <div key={`${day}-${timeIndex}`} className="border-r border-b" style={{
-                            gridRowStart: totalTracksBefore + 1,
-                            gridRowEnd: totalTracksBefore + dayTrackCounts[day] + 1,
+                            gridRowStart: rowStart,
+                            gridRowEnd: rowEnd,
                             gridColumn: timeIndex + 1,
                         }}/>
                      ))
@@ -169,134 +170,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
     );
 }
 
-const VerticalLayout = ({ scheduledItems, startHour, endHour }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number }) => {
-  const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
-  const hourHeight = 60; // 60px per hour
-
-  const positionedEvents = useMemo(() => {
-    const allEvents: Omit<PositionedEvent, 'track'>[] = [];
-    scheduledItems.forEach(({ course, section }) => {
-        const processTime = (type: 'Lecture' | 'Lab', time: SectionTime) => {
-            if (!time) return;
-            time.days.forEach(day => {
-                allEvents.push({
-                    course, section, type, time, day,
-                    startMinutes: timeToMinutes(time.startTime),
-                    endMinutes: timeToMinutes(time.endTime),
-                });
-            });
-        };
-        processTime('Lecture', section.lecture);
-        if (section.lab) processTime('Lab', section.lab);
-    });
-
-    const finalEvents: PositionedEvent[] = [];
-    const dayTracks: Record<string, PositionedEvent[][]> = {};
-    ALL_DAYS.forEach(day => { dayTracks[day] = []; });
-
-    allEvents.sort((a, b) => a.startMinutes - b.startMinutes || b.endMinutes - a.endMinutes).forEach(event => {
-        let placed = false;
-        for (let trackIndex = 0; trackIndex < dayTracks[event.day].length; trackIndex++) {
-            const track = dayTracks[event.day][trackIndex];
-            const hasConflict = track.some(existingEvent =>
-                event.startMinutes < existingEvent.endMinutes && event.endMinutes > existingEvent.startMinutes
-            );
-            if (!hasConflict) {
-                track.push(event as PositionedEvent);
-                (event as PositionedEvent).track = trackIndex;
-                placed = true;
-                break;
-            }
-        }
-        if (!placed) {
-            const newTrackIndex = dayTracks[event.day].length;
-            dayTracks[event.day].push([event as PositionedEvent]);
-            (event as PositionedEvent).track = newTrackIndex;
-        }
-        finalEvents.push(event as PositionedEvent);
-    });
-    return finalEvents;
-  }, [scheduledItems]);
-
-  const dayTrackCounts = useMemo(() => {
-      const counts: Record<string, number> = {};
-      ALL_DAYS.forEach(day => {
-          const eventsOnDay = positionedEvents.filter(e => e.day === day);
-          counts[day] = Math.max(1, ...eventsOnDay.map(e => e.track + 1));
-      });
-      return counts;
-  }, [positionedEvents]);
-
-
-  return (
-    <div className="grid grid-cols-[auto,1fr] bg-background font-sans">
-      {/* Time Column */}
-      <div className="pt-8">
-        {hours.map(hour => (
-          <div key={hour} className="relative text-right pr-2 -top-3 text-xs text-muted-foreground" style={{ height: hourHeight }}>
-            {`${String(hour).padStart(2, '0')}:00`}
-          </div>
-        ))}
-      </div>
-      
-      {/* Schedule Grid */}
-      <div className="grid grid-cols-5 relative">
-        {/* Day Headers */}
-        {ALL_DAYS.map(day => (
-          <div key={day} className="text-center font-bold p-2 border-b border-l text-primary-foreground">
-            {day}
-          </div>
-        ))}
-        
-        {/* Grid Lines */}
-        <div className="col-span-5 grid grid-cols-5" style={{ height: hours.length * hourHeight }}>
-          {ALL_DAYS.map(day => <div key={day} className="border-l h-full"></div>)}
-        </div>
-        <div className="row-span-full grid grid-rows-[repeat(var(--total-hours),minmax(0,1fr))]" style={{'--total-hours': hours.length} as React.CSSProperties}>
-          {hours.map(h => <div key={h} className="border-b"></div>)}
-        </div>
-
-        {/* Events */}
-        <div className="col-span-5 row-start-2 absolute inset-0">
-          {positionedEvents.map(item => {
-              const top = ((item.startMinutes - startHour * 60) / 60) * hourHeight;
-              const height = ((item.endMinutes - item.startMinutes) / 60) * hourHeight;
-              const dayIndex = ALL_DAYS.indexOf(item.day);
-              const totalTracks = dayTrackCounts[item.day];
-              const width = `calc(${100 / totalTracks}% - 4px)`;
-              const left = `calc(${dayIndex * (100/5)}% + ${(100/5) * (item.track / totalTracks)}% + 2px)`;
-
-              return (
-                  <div
-                      key={`${item.course.id}-${item.section.id}-${item.day}-${item.type}`}
-                      className="rounded-lg p-2 flex flex-col justify-start absolute overflow-hidden text-black m-px shadow-sm"
-                      style={{
-                          top,
-                          height,
-                          left,
-                          width,
-                          backgroundColor: item.course.color,
-                      }}
-                      title={`${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`}
-                  >
-                      <div>
-                          <p className="font-bold text-sm text-black/80 truncate">{item.course.name}</p>
-                          <p className="text-xs text-black/70 truncate">{item.section.name} ({item.type})</p>
-                      </div>
-                      <div className="text-xs text-black/60 font-mono mt-1">
-                          {item.time.startTime} - {item.time.endTime}
-                      </div>
-                  </div>
-              );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
-export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
+export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
   const scheduledItems: { course: Course; section: Section; }[] = useMemo(() => {
     const items: { course: Course; section: Section; }[] = [];
     if (!schedule) return items;
@@ -369,10 +243,7 @@ export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
     <div className="mt-8">
       <Card>
         <CardContent className="p-0 overflow-x-auto">
-           {layout === 'horizontal' ? 
-            <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} /> : 
-            <VerticalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} />
-           }
+            <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} /> 
         </CardContent>
       </Card>
       
@@ -380,3 +251,4 @@ export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
     </div>
   );
 }
+
