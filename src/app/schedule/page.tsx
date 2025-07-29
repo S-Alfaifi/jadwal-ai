@@ -80,16 +80,19 @@ export default function SchedulePage() {
     const includedIds = Object.keys(schedule);
     const included = courses.filter(c => includedIds.includes(c.id));
     
-    let reason = null;
-    if (excludedCourses.length > 0) {
-        const examConflict = excludedCourses.some(excluded => 
-            included.some(includedCourse => includedCourse.finalExamPeriod && excluded.finalExamPeriod === includedCourse.finalExamPeriod)
+    let reason = 'a time conflict';
+    if (excludedCourses.length > 0 && generationResult?.conflicts) {
+        const conflict = generationResult.conflicts.find(c => 
+            excludedCourses.some(ec => c.courses.includes(ec.id)) &&
+            included.some(ic => c.courses.includes(ic.id))
         );
-        reason = examConflict ? 'a final exam period conflict' : 'a time conflict';
+        if (conflict?.type === 'exam') {
+            reason = 'a final exam period conflict';
+        }
     }
 
     return { currentSchedule: schedule, includedCoursesInSchedule: included, partialScheduleReason: reason };
-  }, [schedules, currentScheduleIndex, courses, excludedCourses]);
+  }, [schedules, currentScheduleIndex, courses, excludedCourses, generationResult]);
 
   if (!isMounted) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   
