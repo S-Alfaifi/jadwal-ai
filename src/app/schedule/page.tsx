@@ -10,7 +10,7 @@ import { ScheduleControls } from '@/components/schedule-controls';
 import { AiSuggestions } from '@/components/ai-suggestions';
 import { Logo } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { Course, Schedule, LayoutDirection } from '@/lib/types';
+import type { Course, Schedule } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { suggestScheduleWorkarounds } from '@/ai/flows/suggest-schedule-workarounds';
 
@@ -26,7 +26,6 @@ export default function SchedulePage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  const [layout, setLayout] = useState<LayoutDirection>('vertical');
   const router = useRouter();
 
   const runScheduler = useCallback(async () => {
@@ -123,16 +122,8 @@ export default function SchedulePage() {
     } else {
         setIsLoading(false);
     }
-    const savedLayout = localStorage.getItem('scheduleLayout') as LayoutDirection;
-    if (savedLayout) {
-        setLayout(savedLayout);
-    }
   }, []);
 
-  const handleLayoutChange = (newLayout: LayoutDirection) => {
-    setLayout(newLayout);
-    localStorage.setItem('scheduleLayout', newLayout);
-  };
 
   const { currentSchedule, includedCoursesInSchedule, excludedCoursesInSchedule } = useMemo(() => {
     if (!schedules || schedules.length === 0) {
@@ -176,8 +167,6 @@ export default function SchedulePage() {
             total={schedules.length}
             onNext={() => setCurrentScheduleIndex(i => (i + 1) % schedules.length)}
             onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
-            layout={layout}
-            onLayoutChange={handleLayoutChange}
           />
            {excludedCoursesInSchedule.length > 0 && (
             <Alert className="mt-4 border-primary/50 text-primary-foreground">
@@ -194,7 +183,6 @@ export default function SchedulePage() {
             lockedSections={lockedSections}
             onLockToggle={handleLockSection}
             onSectionChange={handleSectionChange}
-            layout={layout}
           />
         </>
       );

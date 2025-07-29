@@ -3,8 +3,6 @@ export type Day = 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu';
 
 export const ALL_DAYS: Day[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
 
-export type LayoutDirection = 'vertical' | 'horizontal';
-
 export interface SectionTime {
   days: Day[];
   startTime: string; // "HH:mm"

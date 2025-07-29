@@ -2,10 +2,9 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import type { Course, Schedule, Section, Day, LayoutDirection } from '@/lib/types';
+import type { Course, Schedule, Section, Day } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 
 interface ScheduleViewProps {
   courses: Course[];
@@ -13,7 +12,6 @@ interface ScheduleViewProps {
   lockedSections: Record<string, string>;
   onLockToggle: (courseId: string, sectionId: string) => void;
   onSectionChange: (courseId: string, newSectionId: string) => void;
-  layout: LayoutDirection;
 }
 
 const timeToMinutes = (time: string): number => {
@@ -102,85 +100,7 @@ const VerticalLayout = ({ scheduledItems, startHour, endHour }: { scheduledItems
     );
 }
 
-const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number }) => {
-    const timeToPosition = (time: string): number => {
-        const minutes = timeToMinutes(time);
-        const startMinutes = startHour * 60;
-        return (minutes - startMinutes) / 30;
-    };
-
-    const numTimeSlots = (endHour - startHour) * 2;
-    const timeLabels = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
-
-  return (
-    <div className="grid grid-cols-[auto_1fr] grid-rows-[auto_repeat(5,minmax(6rem,auto))] gap-px bg-border rounded-lg overflow-hidden border">
-        {/* Corner */}
-        <div className="bg-card row-start-1 col-start-1"></div>
-
-        {/* Time Headers */}
-        <div className="bg-card row-start-1 col-start-2 grid" style={{ gridTemplateColumns: `repeat(${numTimeSlots}, 1fr)`}}>
-            {timeLabels.map((hour) => (
-                <div key={hour} className="col-span-2 text-center text-xs font-medium text-muted-foreground pt-2 border-l border-border first:border-l-0">
-                    {`${hour}:00`}
-                </div>
-            ))}
-        </div>
-
-        {/* Day Headers */}
-        {ALL_DAYS.map((day, dayIndex) => (
-            <div key={day} className="bg-card text-center font-bold p-4 text-primary-foreground flex items-center justify-center" style={{ gridRowStart: dayIndex + 2 }}>{day}</div>
-        ))}
-        
-        {/* Grid Content Area */}
-        <div className="row-start-2 row-span-5 col-start-2 grid grid-rows-5 grid-cols-1 relative">
-            {/* Horizontal Lines for Days */}
-            {ALL_DAYS.slice(0, -1).map((_, i) => (
-                <div key={`h-line-${i}`} className="col-span-full h-px bg-border absolute w-full" style={{ top: `calc(${(100/5) * (i+1)}%)` }} />
-            ))}
-            {/* Vertical Lines for Time */}
-            {Array.from({length: numTimeSlots - 1}, (_, i) => (
-                 <div key={`v-line-${i}`} className={cn("row-span-full w-px absolute h-full", (i + 1) % 2 === 0 ? "bg-border" : "bg-border/50")} style={{ left: `calc(${(100/numTimeSlots) * (i + 1)}%)` }} />
-            ))}
-            
-            {/* Scheduled Items */}
-            <div className="absolute inset-0 grid grid-rows-5 p-1 gap-1" style={{ gridTemplateColumns: `repeat(${numTimeSlots}, 1fr)`}}>
-                {scheduledItems.map(({ course, section }) => {
-                    const events = [];
-                    if(section.lecture) events.push({type: 'Lecture', time: section.lecture});
-                    if(section.lab) events.push({type: 'Lab', time: section.lab});
-
-                    return events.map(({ type, time }) => {
-                        return time.days.map(day => {
-                            const dayIndex = ALL_DAYS.indexOf(day);
-                            const startPos = timeToPosition(time.startTime);
-                            const endPos = timeToPosition(time.endTime);
-
-                            return (
-                              <div
-                                key={`${course.id}-${section.id}-${day}-${type}`}
-                                className="rounded-md p-2 flex flex-col justify-center relative overflow-hidden text-black shadow-sm"
-                                style={{ 
-                                  gridRowStart: dayIndex + 1,
-                                  gridColumn: `${startPos + 1} / ${endPos + 1}`,
-                                  backgroundColor: course.color,
-                                }}
-                              >
-                                <p className="font-bold text-sm text-black/80 leading-tight">{course.name}</p>
-                                <p className="text-xs text-black/70">{section.name} ({type})</p>
-                                <p className="text-xs text-black/60 font-mono mt-1">{time.startTime}-{time.endTime}</p>
-                              </div>
-                            );
-                        })
-                    })
-                })}
-            </div>
-        </div>
-    </div>
-  );
-};
-
-
-export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
+export function ScheduleView({ courses, schedule }: ScheduleViewProps) {
   const scheduledItems: { course: Course; section: Section; }[] = useMemo(() => {
     const items: { course: Course; section: Section; }[] = [];
     for (const courseId in schedule) {
@@ -208,6 +128,7 @@ export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
         if(section.lab) times.push(section.lab);
 
         times.forEach(time => {
+            if (!time) return;
             const start = timeToMinutes(time.startTime);
             const end = timeToMinutes(time.endTime);
             if(start < minMinute) minMinute = start;
@@ -216,11 +137,13 @@ export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
     });
     
     let startH = Math.max(0, minutesToHour(minMinute) - 1);
-    let endH = Math.min(24, Math.ceil(maxMinute / 60) + 1);
+    let endH = Math.min(24, minutesToHour(maxMinute) + 1);
 
     if (endH - startH < 4) {
       endH = startH + 4;
     }
+    
+    if (endH > 24) endH = 24;
 
     return {startHour: startH, endHour: endH};
   }, [scheduledItems]);
@@ -255,9 +178,7 @@ export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
     <div className="mt-8">
       <Card>
         <CardContent className="p-4 md:p-6 overflow-x-auto">
-          {layout === 'vertical' ? 
-            <VerticalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} /> : 
-            <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} />}
+          <VerticalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} />
         </CardContent>
       </Card>
       
@@ -265,6 +186,3 @@ export function ScheduleView({ courses, schedule, layout }: ScheduleViewProps) {
     </div>
   );
 }
-
-
-    
