@@ -8,6 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 interface CourseCardProps {
   course: Course;
@@ -64,12 +65,26 @@ export function CourseCard({ course, onEdit, onDelete, onToggleCourse, onToggleS
               onCheckedChange={(checked) => onToggleCourse(course.id, checked)}
               aria-label={`Toggle course ${course.name}`}
             />
-          <Button variant="ghost" size="icon" onClick={onEdit} aria-label={`Edit course ${course.name}`}>
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={onDelete} aria-label={`Delete course ${course.name}`}>
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={onEdit} aria-label={`Edit course ${course.name}`}>
+                <Edit className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Edit Course</p>
+            </TooltipContent>
+          </Tooltip>
+           <Tooltip>
+            <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={onDelete} aria-label={`Delete course ${course.name}`}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Delete Course</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </CardHeader>
       <CardContent className="p-6 text-sm">

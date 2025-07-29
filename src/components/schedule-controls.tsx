@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -12,7 +12,7 @@ interface ScheduleControlsProps {
   total: number;
   onPrev: () => void;
   onNext: () => void;
-  onRegenerate: () => void;
+  onSaveImage: () => void;
 }
 
 export function ScheduleControls({
@@ -20,7 +20,7 @@ export function ScheduleControls({
   total,
   onPrev,
   onNext,
-  onRegenerate
+  onSaveImage
 }: ScheduleControlsProps) {
   return (
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 rounded-lg bg-card border">
@@ -36,23 +36,37 @@ export function ScheduleControls({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="icon" onClick={onRegenerate}>
-              <RefreshCw className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={onSaveImage}>
+              <Camera className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Regenerate Schedule</p>
+            <p>Save Schedule as Image</p>
           </TooltipContent>
         </Tooltip>
 
         {total > 1 && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={onPrev} disabled={total <= 1}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={onNext} disabled={total <= 1}>
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+             <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={onPrev} disabled={total <= 1}>
+                    <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Previous Schedule</p>
+                </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={onNext} disabled={total <= 1}>
+                    <ArrowRight className="h-4 w-4" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Next Schedule</p>
+                </TooltipContent>
+            </Tooltip>
           </div>
         )}
       </div>

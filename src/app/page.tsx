@@ -12,6 +12,7 @@ import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
 import type { Course, Section } from "@/lib/types";
 import { generatePastelColor } from "@/lib/colors";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type CourseFormData = Omit<Course, 'id' | 'color' | 'sections' | 'isEnabled'> & { id?: string, sections: (Omit<Section, 'id' | 'isEnabled'> & {id?: string})[] };
 
@@ -28,7 +29,6 @@ export default function Home() {
     const savedCourses = localStorage.getItem("courses");
     if (savedCourses) {
       const parsedCourses: Course[] = JSON.parse(savedCourses);
-      // Backwards compatibility for courses saved without isEnabled property
       const coursesWithDefaults = parsedCourses.map(course => ({
           ...course,
           isEnabled: course.isEnabled !== undefined ? course.isEnabled : true,
@@ -144,81 +144,97 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="py-6 px-4 md:px-8 border-b">
-        <Logo />
-      </header>
-      
-      <main className="flex-grow container mx-auto p-4 md:p-8">
-        <div className="text-center mb-12">
-          <h1 className="font-headline text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight">
-            Create Your Schedule
-          </h1>
-          <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
-            Add your courses below. Toggle courses or specific sections to include them in the final schedule.
-          </p>
-        </div>
-
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-center md:justify-end items-center gap-4 mb-8">
-             <Button variant="outline" disabled>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Data
-            </Button>
-            <Button onClick={handleAddCourseClick}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Course
-            </Button>
+    <TooltipProvider>
+      <div className="flex flex-col min-h-screen">
+        <header className="py-6 px-4 md:px-8 border-b">
+          <Logo />
+        </header>
+        
+        <main className="flex-grow container mx-auto p-4 md:p-8">
+          <div className="text-center mb-12">
+            <h1 className="font-headline text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight">
+              Create Your Schedule
+            </h1>
+            <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
+              Add your courses below. Toggle courses or specific sections to include them in the final schedule.
+            </p>
           </div>
 
-          <div className="space-y-4">
-            {courses.length > 0 ? (
-              courses.map((course) => (
-                <CourseCard
-                  key={course.id}
-                  course={course}
-                  onEdit={() => handleEditCourse(course)}
-                  onDelete={() => handleDeleteCourse(course.id)}
-                  onToggleCourse={handleToggleCourse}
-                  onToggleSection={handleToggleSection}
-                />
-              ))
-            ) : (
-              <div className="text-center py-16 px-8 bg-card rounded-lg border-2 border-dashed">
-                <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-medium text-primary-foreground">No courses added yet</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Click on 'Add Course' to start building your schedule.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-
-      <footer className="sticky bottom-0 bg-background/80 backdrop-blur-sm p-4 border-t">
           <div className="max-w-4xl mx-auto">
-            <Button size="lg" className="w-full" onClick={handleGenerateSchedule} disabled={courses.filter(c => c.isEnabled).length === 0}>
-              Generate Schedule
-            </Button>
-          </div>
-      </footer>
+            <div className="flex justify-center md:justify-end items-center gap-4 mb-8">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" disabled>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Data
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Upload course data from a file (coming soon!)</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={handleAddCourseClick}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Course
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Manually add a new course</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[700px]">
-          <DialogHeader>
-            <DialogTitle>{editingCourse ? "Edit Course" : "Add a New Course"}</DialogTitle>
-            <DialogDescription>
-              Fill in the details for the course, adding one or more sections with their lecture and lab times.
-            </DialogDescription>
-          </DialogHeader>
-          <AddCourseForm
-            key={editingCourse?.id || 'new'}
-            onSubmit={handleFormSubmit}
-            course={editingCourse}
-          />
-        </DialogContent>
-      </Dialog>
-    </div>
+            <div className="space-y-4">
+              {courses.length > 0 ? (
+                courses.map((course) => (
+                  <CourseCard
+                    key={course.id}
+                    course={course}
+                    onEdit={() => handleEditCourse(course)}
+                    onDelete={() => handleDeleteCourse(course.id)}
+                    onToggleCourse={handleToggleCourse}
+                    onToggleSection={handleToggleSection}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-16 px-8 bg-card rounded-lg border-2 border-dashed">
+                  <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-medium text-primary-foreground">No courses added yet</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Click on 'Add Course' to start building your schedule.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+
+        <footer className="sticky bottom-0 bg-background/80 backdrop-blur-sm p-4 border-t">
+            <div className="max-w-4xl mx-auto">
+              <Button size="lg" className="w-full" onClick={handleGenerateSchedule} disabled={courses.filter(c => c.isEnabled).length === 0}>
+                Generate Schedule
+              </Button>
+            </div>
+        </footer>
+
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent className="sm:max-w-[700px]">
+            <DialogHeader>
+              <DialogTitle>{editingCourse ? "Edit Course" : "Add a New Course"}</DialogTitle>
+              <DialogDescription>
+                Fill in the details for the course, adding one or more sections with their lecture and lab times.
+              </DialogDescription>
+            </DialogHeader>
+            <AddCourseForm
+              key={editingCourse?.id || 'new'}
+              onSubmit={handleFormSubmit}
+              course={editingCourse}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
   );
 }

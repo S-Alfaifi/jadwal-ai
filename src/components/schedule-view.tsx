@@ -90,8 +90,8 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
     return (
         <div className="grid grid-cols-[auto_1fr] bg-background font-sans">
             {/* Top-left corner */}
-            <div className="sticky left-0 top-0 z-30 flex items-center justify-center bg-card border-r p-2 border-b">
-                <div className="text-xs font-medium text-muted-foreground">Time</div>
+            <div className="sticky left-0 top-0 z-30 flex items-center justify-center bg-card border-r border-b">
+                <div className="text-xs font-medium text-muted-foreground p-2">Time</div>
             </div>
             
              {/* Time Headers */}
@@ -102,8 +102,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                     </div>
                 ))}
             </div>
-
-             {/* Day Headers */}
+            
             <div className="sticky left-0 z-20 flex flex-col">
                 {ALL_DAYS.map((day) => (
                     <div key={day} className="flex-grow flex items-center justify-center p-2 font-bold text-primary-foreground bg-card border-b border-r" style={{minHeight: `${dayTrackCounts[day] * 80}px`}}>

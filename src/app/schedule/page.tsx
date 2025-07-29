@@ -1,8 +1,9 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { toPng } from 'html-to-image';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle, ArrowLeft, Info, BrainCircuit } from 'lucide-react';
 import { ScheduleView } from '@/components/schedule-view';
@@ -11,7 +12,7 @@ import { Logo } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Course, Schedule, GenerationResult, Conflict } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
-import { TooltipProvider } from "@/components/ui/tooltip"
+import { Tooltip, TooltipProvider } from "@/components/ui/tooltip"
 
 export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -21,6 +22,7 @@ export default function SchedulePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
+  const scheduleRef = useRef<HTMLDivElement>(null);
 
   const runScheduler = useCallback(() => {
     const activeCourses = courses
@@ -40,7 +42,6 @@ export default function SchedulePage() {
     setIsLoading(true);
     setCurrentScheduleIndex(0);
     
-    // Using setTimeout to allow the UI to update to the loading state
     setTimeout(() => {
         const result = generateSchedules(activeCourses);
         setGenerationResult(result);
@@ -67,24 +68,56 @@ export default function SchedulePage() {
     }
   }, [isMounted, courses, runScheduler]);
 
-  const { schedules = [], conflicts = [], excludedCourses: rawExcludedCourses = [] } = generationResult || {};
+  const { schedules = [], conflicts = [] } = generationResult || {};
 
-  const { currentSchedule, includedCoursesInSchedule, excludedCoursesForThisSchedule } = useMemo(() => {
+  const { currentSchedule, includedCoursesInSchedule, excludedCoursesForThisSchedule, conflictForThisSchedule } = useMemo(() => {
     if (!schedules || schedules.length === 0) {
-      return { currentSchedule: null, includedCoursesInSchedule: [], excludedCoursesForThisSchedule: [] };
+      return { currentSchedule: null, includedCoursesInSchedule: [], excludedCoursesForThisSchedule: [], conflictForThisSchedule: null };
     }
     const schedule = schedules[currentScheduleIndex];
     if (!schedule) {
-       return { currentSchedule: null, includedCoursesInSchedule: [], excludedCoursesForThisSchedule: [] };
+       return { currentSchedule: null, includedCoursesInSchedule: [], excludedCoursesForThisSchedule: [], conflictForThisSchedule: null };
     }
     
     const includedIds = new Set(Object.keys(schedule));
     const included = courses.filter(c => includedIds.has(c.id));
+    
     const activeCourses = courses.filter(c => c.isEnabled && c.sections.some(s => s.isEnabled));
     const excluded = activeCourses.filter(c => !includedIds.has(c.id));
+
+    const conflict = conflicts.find(c => {
+        const conflictCourseIds = new Set(c.courses.map(course => course.id));
+        const scheduleHasACourse = included.some(course => conflictCourseIds.has(course.id));
+        const excludedHasACourse = excluded.some(course => conflictCourseIds.has(course.id));
+        return scheduleHasACourse && excludedHasACourse;
+    });
     
-    return { currentSchedule: schedule, includedCoursesInSchedule: included, excludedCoursesForThisSchedule: excluded };
-  }, [schedules, currentScheduleIndex, courses]);
+    return { 
+        currentSchedule: schedule, 
+        includedCoursesInSchedule: included, 
+        excludedCoursesForThisSchedule: excluded,
+        conflictForThisSchedule: conflict,
+    };
+  }, [schedules, currentScheduleIndex, courses, conflicts]);
+
+
+  const handleSaveImage = useCallback(() => {
+    if (scheduleRef.current === null) {
+      return;
+    }
+
+    toPng(scheduleRef.current, { cacheBust: true, backgroundColor: '#ffffff', style: { padding: '20px' } })
+      .then((dataUrl) => {
+        const link = document.createElement('a');
+        link.download = 'schedule.png';
+        link.href = dataUrl;
+        link.click();
+      })
+      .catch((err) => {
+        console.error('Failed to save image', err);
+      });
+  }, []);
+
 
   if (!isMounted) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   
@@ -106,27 +139,31 @@ export default function SchedulePage() {
             total={schedules.length}
             onNext={() => setCurrentScheduleIndex(i => (i + 1) % schedules.length)}
             onPrev={() => setCurrentScheduleIndex(i => (i - 1 + schedules.length) % schedules.length)}
-            onRegenerate={runScheduler}
+            onSaveImage={handleSaveImage}
           />
            {excludedCoursesForThisSchedule.length > 0 && (
             <Alert className="mt-4 border-primary/50 text-primary-foreground">
               <Info className="h-4 w-4" />
               <AlertTitle>Partial Schedule Generated</AlertTitle>
               <AlertDescription>
-                 {conflicts.length > 0 ? (
-                    <p className="font-semibold">{conflicts[0].message}</p>
+                 {conflictForThisSchedule ? (
+                    <p className="font-semibold">
+                      Conflict: {conflictForThisSchedule.courses.map(c => c.name).join(' and ')} have a {conflictForThisSchedule.type} conflict.
+                    </p>
                  ) : (
-                    <p>A full schedule could not be generated with all courses.</p>
+                    <p>A full schedule could not be generated with all selected courses.</p>
                  )}
                 <p className="mt-2">To make this schedule, we had to exclude: <strong>{excludedCoursesForThisSchedule.map(c => c.name).join(', ')}</strong>.</p>
                 <p className="mt-1">This schedule includes: <strong>{includedCoursesInSchedule.map(c => c.name).join(', ')}</strong>.</p>
               </AlertDescription>
             </Alert>
           )}
-          <ScheduleView
-            courses={includedCoursesInSchedule}
-            schedule={currentSchedule}
-          />
+          <div ref={scheduleRef}>
+            <ScheduleView
+              courses={includedCoursesInSchedule}
+              schedule={currentSchedule}
+            />
+          </div>
         </>
       );
     }
@@ -154,10 +191,17 @@ export default function SchedulePage() {
        <header className="py-6 px-4 md:px-8 border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto flex justify-between items-center">
             <Logo />
-            <Button variant="outline" onClick={() => router.push('/')}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Edit
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" onClick={() => router.push('/')}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Edit
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Return to the course selection page</p>
+              </TooltipContent>
+            </Tooltip>
         </div>
       </header>
 
