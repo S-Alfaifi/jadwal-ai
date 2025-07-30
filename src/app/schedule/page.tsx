@@ -14,7 +14,6 @@ import type { Course, Schedule, GenerationResult, Conflict } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from '@/components/theme-toggle';
-import { suggestWorkarounds, type SuggestWorkaroundsInput } from '@/ai/flows/suggest-schedule-workarounds';
 
 export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -25,8 +24,6 @@ export default function SchedulePage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
 
   const router = useRouter();
   const scheduleRef = useRef<{
@@ -50,7 +47,6 @@ export default function SchedulePage() {
 
     setIsLoading(true);
     setCurrentScheduleIndex(0);
-    setAiSuggestions([]);
     
     setTimeout(() => {
         const result = generateSchedules(activeCourses);
@@ -141,27 +137,6 @@ export default function SchedulePage() {
     }
   }, []);
 
-  const handleGetAiSuggestions = async () => {
-    if (!conflictForThisSchedule) return;
-
-    setIsAiLoading(true);
-    setAiSuggestions([]);
-
-    try {
-        const input: SuggestWorkaroundsInput = {
-            conflictingCourses: conflictForThisSchedule.courses,
-            conflictType: conflictForThisSchedule.type,
-        };
-        const result = await suggestWorkarounds(input);
-        setAiSuggestions(result.suggestions);
-    } catch (error) {
-        console.error("AI suggestion error:", error);
-        setAiSuggestions(["Sorry, I couldn't generate suggestions at this time. Please try again later."]);
-    } finally {
-        setIsAiLoading(false);
-    }
-  };
-
 
   if (!isMounted) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   
@@ -207,35 +182,9 @@ export default function SchedulePage() {
                     <p>This schedule was created by excluding: <strong className="font-semibold">{excludedCoursesForThisSchedule.map(c => c.name).join(', ')}</strong>.</p>
                  )}
               </AlertDescription>
-              {conflictForThisSchedule && (
-                <div className="mt-4">
-                    <Button onClick={handleGetAiSuggestions} disabled={isAiLoading} size="sm">
-                        {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                        Get AI Suggestions
-                    </Button>
-                </div>
-              )}
             </Alert>
           )}
 
-           {isAiLoading && (
-            <div className="mt-4 flex items-center justify-center rounded-lg border-2 border-dashed p-8 text-muted-foreground">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Thinking of suggestions...
-            </div>
-          )}
-
-          {aiSuggestions.length > 0 && !isAiLoading && (
-             <Alert className="mt-4 bg-primary/10 border-primary/50">
-               <Sparkles className="h-4 w-4 text-primary/80" />
-              <AlertTitle className="font-bold text-foreground">Heads up! Here are some suggestions:</AlertTitle>
-              <AlertDescription>
-                <ul className="list-disc pl-5 mt-2 space-y-1">
-                  {aiSuggestions.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
-          
           <ScheduleView
             ref={scheduleRef}
             courses={includedCoursesInSchedule}
@@ -258,14 +207,6 @@ export default function SchedulePage() {
            <p className="mt-2 text-base text-muted-foreground">
              We couldn't generate any possible schedule with the courses and sections you enabled.
            </p>
-        )}
-        {conflicts.length > 0 && (
-            <div className="mt-6">
-                <Button onClick={handleGetAiSuggestions} disabled={isAiLoading}>
-                    {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    Get AI Help
-                </Button>
-            </div>
         )}
         <Button onClick={() => router.push('/editor')} className="mt-4" variant="outline">
           Go Back and Edit Courses
