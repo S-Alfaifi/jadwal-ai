@@ -111,16 +111,21 @@ export default function SchedulePage() {
     }
 
     const element = scheduleRef.current.scheduleGrid;
+    // The element with the overflow is the first child of the grid ref
+    const contentElement = element.firstChild as HTMLElement;
+    if (!contentElement) return;
 
     try {
         const computedStyle = window.getComputedStyle(element);
         const backgroundColor = computedStyle.backgroundColor;
 
-        const dataUrl = await toPng(element, {
+        const dataUrl = await toPng(contentElement, {
             cacheBust: true,
             skipFonts: true,
             backgroundColor: backgroundColor,
             pixelRatio: 2,
+            width: contentElement.scrollWidth,
+            height: contentElement.scrollHeight,
         });
 
         const link = document.createElement('a');
