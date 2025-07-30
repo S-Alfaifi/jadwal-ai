@@ -126,6 +126,11 @@ function findSchedulesRecursive(
   allCourses: Course[]
 ): Schedule[] {
   if (coursesToSchedule.length === 0) {
+    // Before returning a valid schedule, double-check for exam conflicts
+    const conflicts = findScheduleConflicts(currentSchedule, allCourses);
+    if (conflicts.some(c => c.type === 'exam')) {
+        return []; // This path has an exam conflict, so it's invalid.
+    }
     return [currentSchedule];
   }
 
@@ -135,7 +140,16 @@ function findSchedulesRecursive(
   for (const section of currentCourse.sections) {
     const newSchedule = { ...currentSchedule, [currentCourse.id]: { sectionId: section.id } };
     
-    if (findScheduleConflicts(newSchedule, allCourses).length === 0) {
+    // Check only for time conflicts at this stage
+    const scheduleEntries = Object.entries(newSchedule).map(([courseId, { sectionId }]) => {
+        const course = allCourses.find(c => c.id === courseId);
+        const section = course?.sections.find(s => s.id === sectionId);
+        return { course, section };
+    }).filter((e): e is { course: Course, section: Section } => !!e.course && !!e.section);
+
+    const timeConflicts = getScheduleConflicts(scheduleEntries).filter(c => c.type === 'time');
+
+    if (timeConflicts.length === 0) {
       foundSchedules = foundSchedules.concat(
         findSchedulesRecursive(remainingCourses, newSchedule, allCourses)
       );
@@ -147,8 +161,14 @@ function findSchedulesRecursive(
 
 
 export function generateSchedules(allCourses: Course[]): GenerationResult {
-    // Attempt with all courses first
     let schedules = findSchedulesRecursive(allCourses, {}, allCourses);
+    const allConflicts = findScheduleConflicts(
+      allCourses.reduce((acc, course) => {
+          if (course.sections.length > 0) acc[course.id] = { sectionId: course.sections[0].id };
+          return acc;
+      }, {} as Schedule), 
+      allCourses
+    );
 
     if (schedules.length > 0) {
         const scoredSchedules = schedules.map(schedule => ({
@@ -157,17 +177,18 @@ export function generateSchedules(allCourses: Course[]): GenerationResult {
         })).sort((a,b) => a.score - b.score);
 
         const uniqueSchedules = [...new Set(scoredSchedules.map(s => JSON.stringify(s.schedule)))].slice(0, 20).map(s => JSON.parse(s));
+        
+        const examConflictsInFirstSchedule = findScheduleConflicts(uniqueSchedules[0], allCourses).filter(c => c.type === 'exam');
 
         return {
             schedules: uniqueSchedules,
-            conflicts: [],
+            conflicts: examConflictsInFirstSchedule,
             excludedCourses: [],
         };
     }
 
     // If no complete schedule, try generating partial schedules by removing one course at a time
     let allPartialSchedules: Schedule[] = [];
-    let allConflicts: Conflict[] = [];
     let allExcludedCourses: Course[] = [];
 
     for (let i = 0; i < allCourses.length; i++) {
@@ -179,22 +200,6 @@ export function generateSchedules(allCourses: Course[]): GenerationResult {
         if (partialSchedules.length > 0) {
             allPartialSchedules.push(...partialSchedules);
             allExcludedCourses.push(excludedCourse);
-
-            // Find the reason for exclusion
-            let conflictReason: Conflict[] = [];
-            // To find the conflict, we test the excluded course against the *first* successful partial schedule
-            const firstPartialSchedule = partialSchedules[0];
-            const testScheduleWithExclusion = { ...firstPartialSchedule, [excludedCourse.id]: { sectionId: excludedCourse.sections[0].id } };
-            const potentialConflicts = findScheduleConflicts(testScheduleWithExclusion, allCourses);
-            if (potentialConflicts.length > 0) {
-                // We found a direct conflict.
-                const specificConflict = potentialConflicts.find(p => p.courses.some(c => c.id === excludedCourse.id));
-                if (specificConflict) {
-                    allConflicts.push(specificConflict);
-                } else {
-                     allConflicts.push(potentialConflicts[0]);
-                }
-            }
         }
     }
     
@@ -206,30 +211,20 @@ export function generateSchedules(allCourses: Course[]): GenerationResult {
 
         const uniqueSchedules = [...new Set(scoredSchedules.map(s => JSON.stringify(s.schedule)))].slice(0, 20).map(s => JSON.parse(s));
         
-        // This part is tricky - which conflict to show? We'll show the one related to the first generated schedule.
         const firstScheduleCourseIds = Object.keys(uniqueSchedules[0]);
         const firstExcludedCourse = allCourses.find(c => !firstScheduleCourseIds.includes(c.id));
         let conflictToShow = allConflicts.find(conflict => conflict.courses.some(c => c.id === firstExcludedCourse?.id));
 
         return {
             schedules: uniqueSchedules,
-            conflicts: conflictToShow ? [conflictToShow] : allConflicts.slice(0, 1),
+            conflicts: conflictToShow ? [conflictToShow] : [],
             excludedCourses: firstExcludedCourse ? [firstExcludedCourse] : [],
         };
     }
-    
-    // If no schedule can be generated at all, find a representative conflict
-    const testSchedule = allCourses.reduce((acc, course) => {
-        if (course.sections.length > 0) {
-            acc[course.id] = { sectionId: course.sections[0].id };
-        }
-        return acc;
-    }, {} as Schedule);
-    const conflicts = findScheduleConflicts(testSchedule, allCourses);
 
     return {
         schedules: [],
-        conflicts: conflicts.slice(0,1),
+        conflicts: allConflicts.slice(0,1),
         excludedCourses: allCourses,
     };
 }

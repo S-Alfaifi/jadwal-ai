@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation';
 import { toPng } from 'html-to-image';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, ArrowLeft, Download } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, Download, Sparkles } from 'lucide-react';
 import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
 import { Logo } from '@/components/logo';
@@ -14,6 +14,7 @@ import type { Course, Schedule, GenerationResult, Conflict } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from '@/components/theme-toggle';
+import { suggestWorkarounds, SuggestWorkaroundsInput } from '@/ai/flows/suggest-schedule-workarounds';
 
 export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -24,6 +25,9 @@ export default function SchedulePage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+
   const router = useRouter();
   const scheduleRef = useRef<{
     scheduleGrid: HTMLDivElement | null;
@@ -46,6 +50,7 @@ export default function SchedulePage() {
 
     setIsLoading(true);
     setCurrentScheduleIndex(0);
+    setAiSuggestions([]);
     
     setTimeout(() => {
         const result = generateSchedules(activeCourses);
@@ -95,7 +100,7 @@ export default function SchedulePage() {
 
     const conflict = conflicts.find(c => {
         const conflictCourseIds = new Set(c.courses.map(course => course.id));
-        return excluded.some(excludedCourse => conflictCourseIds.has(excludedCourse.id));
+        return excluded.some(excludedCourse => conflictCourseIds.has(excludedCourse.id)) || c.courses.every(cc => includedIds.has(cc.id));
     });
     
     return { 
@@ -136,6 +141,27 @@ export default function SchedulePage() {
     }
   }, []);
 
+  const handleGetAiSuggestions = async () => {
+    if (!conflictForThisSchedule) return;
+
+    setIsAiLoading(true);
+    setAiSuggestions([]);
+
+    try {
+        const input: SuggestWorkaroundsInput = {
+            conflictingCourses: conflictForThisSchedule.courses,
+            conflictType: conflictForThisSchedule.type,
+        };
+        const result = await suggestWorkarounds(input);
+        setAiSuggestions(result.suggestions);
+    } catch (error) {
+        console.error("AI suggestion error:", error);
+        setAiSuggestions(["Sorry, I couldn't generate suggestions at this time. Please try again later."]);
+    } finally {
+        setIsAiLoading(false);
+    }
+  };
+
 
   if (!isMounted) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   
@@ -163,10 +189,12 @@ export default function SchedulePage() {
             showClassTypes={showClassTypes}
             onToggleShowClassTypes={() => setShowClassTypes(prev => !prev)}
           />
-           {excludedCoursesForThisSchedule.length > 0 && (
+           {(excludedCoursesForThisSchedule.length > 0 || (conflictForThisSchedule && includedCoursesInSchedule.length === courses.filter(c => c.isEnabled).length))) && (
             <Alert variant="destructive" className="mt-4 bg-destructive/10">
               <AlertTriangle className="h-4 w-4 text-destructive-foreground/90" />
-              <AlertTitle className="font-bold text-foreground">Partial Schedule Generated</AlertTitle>
+              <AlertTitle className="font-bold text-foreground">
+                { excludedCoursesForThisSchedule.length > 0 ? "Partial Schedule Generated" : "Potential Conflict Detected"}
+              </AlertTitle>
               <AlertDescription className="text-foreground/90 space-y-1">
                  {conflictForThisSchedule ? (
                     <p>
@@ -175,7 +203,35 @@ export default function SchedulePage() {
                  ) : (
                     <p>A full schedule could not be generated with all selected courses.</p>
                  )}
-                <p>This schedule was created by excluding: <strong className="font-semibold">{excludedCoursesForThisSchedule.map(c => c.name).join(', ')}</strong>.</p>
+                 {excludedCoursesForThisSchedule.length > 0 && (
+                    <p>This schedule was created by excluding: <strong className="font-semibold">{excludedCoursesForThisSchedule.map(c => c.name).join(', ')}</strong>.</p>
+                 )}
+              </AlertDescription>
+              {conflictForThisSchedule && (
+                <div className="mt-4">
+                    <Button onClick={handleGetAiSuggestions} disabled={isAiLoading} size="sm">
+                        {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                        Get AI Suggestions
+                    </Button>
+                </div>
+              )}
+            </Alert>
+          )}
+
+           {isAiLoading && (
+            <div className="mt-4 flex items-center justify-center rounded-lg border-2 border-dashed p-8 text-muted-foreground">
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Thinking of suggestions...
+            </div>
+          )}
+
+          {aiSuggestions.length > 0 && !isAiLoading && (
+             <Alert className="mt-4 bg-primary/10 border-primary/50">
+               <Sparkles className="h-4 w-4 text-primary/80" />
+              <AlertTitle className="font-bold text-foreground">Heads up! Here are some suggestions:</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-5 mt-2 space-y-1">
+                  {aiSuggestions.map((s, i) => <li key={i}>{s}</li>)}
+                </ul>
               </AlertDescription>
             </Alert>
           )}
@@ -203,7 +259,15 @@ export default function SchedulePage() {
              We couldn't generate any possible schedule with the courses and sections you enabled.
            </p>
         )}
-        <Button onClick={() => router.push('/editor')} className="mt-6">
+        {conflicts.length > 0 && (
+            <div className="mt-6">
+                <Button onClick={handleGetAiSuggestions} disabled={isAiLoading}>
+                    {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    Get AI Help
+                </Button>
+            </div>
+        )}
+        <Button onClick={() => router.push('/editor')} className="mt-4" variant="outline">
           Go Back and Edit Courses
         </Button>
       </div>

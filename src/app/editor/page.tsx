@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { PlusCircle, BookOpen, Upload } from "lucide-react";
+import { PlusCircle, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AddCourseForm } from "@/components/add-course-form";
@@ -174,17 +174,6 @@ export default function EditorPage() {
 
           <div className="max-w-4xl mx-auto">
             <div className="flex justify-center md:justify-end items-center gap-4 mb-8">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" disabled>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Data
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Upload course data from a file (coming soon!)</p>
-                </TooltipContent>
-              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button onClick={handleAddCourseClick}>
