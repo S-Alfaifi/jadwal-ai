@@ -45,7 +45,7 @@ const SectionTimeDisplay = ({ sectionTime, type }: { sectionTime: SectionTime, t
 
 export function CourseCard({ course, onEdit, onDelete, onToggleCourse, onToggleSection, onUpdateCourseColor }: CourseCardProps) {
   return (
-    <Card className={cn("overflow-hidden transition-all hover:shadow-md", !course.isEnabled && "bg-muted/50")}>
+    <Card className={cn("overflow-hidden transition-all hover:shadow-md", !course.isEnabled && "opacity-50")}>
       <CardHeader className="flex flex-row items-start bg-muted/50">
         <div className="flex-grow">
           <CardTitle className="flex items-center gap-3">
@@ -116,8 +116,8 @@ export function CourseCard({ course, onEdit, onDelete, onToggleCourse, onToggleS
       <CardContent className="p-6 text-sm">
          <Accordion type="single" collapsible className="w-full" disabled={!course.isEnabled}>
             {course.sections.map((section, index) => (
-              <AccordionItem value={`item-${index}`} key={section.id}>
-                <AccordionTrigger className={cn(!section.isEnabled && "text-muted-foreground")}>
+              <AccordionItem value={`item-${index}`} key={section.id} className={cn(!section.isEnabled && "bg-muted/30 rounded-md px-4")}>
+                <AccordionTrigger>
                   <div className="flex items-center gap-4 flex-grow">
                       <span className="font-medium">{section.name}</span>
                   </div>
