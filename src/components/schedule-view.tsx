@@ -23,11 +23,17 @@ interface PositionedEvent {
 }
 
 const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number }) => {
-    const timeSlots = Array.from({ length: (endHour - startHour) * 2 }, (_, i) => {
+    // Visual grid is 30-min intervals
+    const visualTimeSlots = Array.from({ length: (endHour - startHour) * 2 }, (_, i) => {
         const hour = startHour + Math.floor(i / 2);
         const minute = i % 2 === 0 ? '00' : '30';
         return `${String(hour).padStart(2, '0')}:${minute}`;
     });
+
+    // Layout grid is 5-min intervals for precision
+    const layoutInterval = 5; // minutes
+    const columnsPerHour = 60 / layoutInterval;
+    const totalColumns = (endHour - startHour) * columnsPerHour;
 
     const { positionedEvents, dayTrackCounts } = useMemo(() => {
         const allEvents: Omit<PositionedEvent, 'track'>[] = [];
@@ -94,9 +100,9 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                 <div className="text-xs font-medium text-muted-foreground p-2">Time</div>
             </div>
             
-             {/* Time Headers */}
-            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(4.5rem, 1fr))`}}>
-                 {timeSlots.map((time) => (
+             {/* Time Headers (Visual Grid) */}
+            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${visualTimeSlots.length}, minmax(4.5rem, 1fr))`}}>
+                 {visualTimeSlots.map((time) => (
                     <div key={time} className="text-center p-2 text-[10px] md:text-xs font-medium text-muted-foreground border-r border-b" >
                         {time.endsWith('00') ? time : ''}
                     </div>
@@ -111,16 +117,17 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                 ))}
             </div>
 
-            {/* Schedule Grid Area */}
-            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, 1fr)`, gridTemplateRows: `repeat(${Object.values(dayTrackCounts).reduce((a,b) => a+b, 0)}, 80px)`}}>
-                {/* Background Grid Cells */}
+            {/* Schedule Grid Area (Layout Grid) */}
+            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${totalColumns}, 1fr)`, gridTemplateRows: `repeat(${Object.values(dayTrackCounts).reduce((a,b) => a+b, 0)}, 80px)`}}>
+                {/* Background Grid Cells (Visual Grid) */}
                 {ALL_DAYS.map((day, dayIndex) => {
                     const dayRowStart = ALL_DAYS.slice(0, dayIndex).reduce((acc, d) => acc + dayTrackCounts[d], 0) + 1;
                     return Array.from({length: dayTrackCounts[day]}).map((_, trackIndex) => (
-                        Array.from({length: timeSlots.length}).map((_, timeIndex) => (
+                         // We only need to render the visual grid lines (every 30 mins)
+                        Array.from({length: visualTimeSlots.length}).map((_, timeIndex) => (
                             <div key={`${day}-${trackIndex}-${timeIndex}`} className="border-r border-b" style={{
                                 gridRow: dayRowStart + trackIndex,
-                                gridColumn: timeIndex + 1,
+                                gridColumn: `${(timeIndex * columnsPerHour / 2) + 1} / span ${columnsPerHour / 2}`,
                                 minHeight: '80px',
                             }}/>
                         ))
@@ -129,8 +136,8 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
 
                 {/* Positioned Event Items */}
                 {positionedEvents.map((item, eventIndex) => {
-                    const startCol = ((item.startMinutes - startHour * 60) / 30);
-                    const durationCols = Math.ceil((item.endMinutes - item.startMinutes) / 30);
+                    const startCol = ((item.startMinutes - startHour * 60) / layoutInterval) + 1;
+                    const durationCols = (item.endMinutes - item.startMinutes) / layoutInterval;
 
                     const dayRowStart = ALL_DAYS.slice(0, ALL_DAYS.indexOf(item.day)).reduce((acc, d) => acc + dayTrackCounts[d], 0) + 1;
                     const rowStart = dayRowStart + item.track;
@@ -141,7 +148,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                             className="rounded-lg p-2 flex flex-col justify-between relative overflow-hidden text-black m-1 shadow-md"
                             style={{
                                 gridRow: `${rowStart} / span 1`,
-                                gridColumn: `${startCol + 1} / span ${durationCols}`,
+                                gridColumn: `${startCol} / span ${durationCols}`,
                                 backgroundColor: item.course.color,
                                 zIndex: 10,
                                 minHeight: '72px'
@@ -152,8 +159,8 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                                 <p className="text-xs text-black/80 truncate">{item.section.name} ({item.type})</p>
                             </div>
                             <div className="flex justify-between items-end text-base font-bold text-black/80 font-code mt-1">
-                                <span>{item.time.startTime}</span>
-                                <span>{item.time.endTime}</span>
+                                <span className="font-code font-bold text-lg">{item.time.startTime}</span>
+                                <span className="font-code font-bold text-lg">{item.time.endTime}</span>
                             </div>
                         </div>
                     );
