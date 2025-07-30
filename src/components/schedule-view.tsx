@@ -156,17 +156,19 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                             }}
                              title={`${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`}>
                             <div>
-                                <p className="font-bold text-sm text-black/90 truncate">{item.course.name}</p>
-                                {showSectionNames && <p className="text-xs text-black/80 truncate">{item.section.name}</p>}
-                                {showClassTypes && (
-                                  <div className="flex items-center gap-1.5 text-xs text-black/80 mt-1">
-                                    {item.type === 'Lecture' 
-                                        ? <BookText className="h-3 w-3" /> 
-                                        : <FlaskConical className="h-3 w-3" />
-                                    }
-                                    <span>{item.type}</span>
-                                  </div>
-                                )}
+                                <div className="flex items-baseline gap-2">
+                                    <p className="font-bold text-sm text-black/90 truncate">{item.course.name}</p>
+                                     {showClassTypes && (
+                                        <div className="flex items-center gap-1 font-code text-xs text-black/70">
+                                            {item.type === 'Lecture' 
+                                                ? <BookText className="h-3 w-3" /> 
+                                                : <FlaskConical className="h-3 w-3" />
+                                            }
+                                            <span>{item.type}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                {showSectionNames && <p className="text-xs text-black/80 truncate mt-0.5">{item.section.name}</p>}
                             </div>
                             <div className="flex justify-between items-end mt-1">
                                 <span className="font-code font-bold text-lg text-black/80">{item.time.startTime}</span>
@@ -283,3 +285,5 @@ export const ScheduleView = forwardRef<{
 });
 
 ScheduleView.displayName = 'ScheduleView';
+
+    
