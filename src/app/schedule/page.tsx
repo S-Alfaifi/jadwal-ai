@@ -229,6 +229,12 @@ export default function SchedulePage() {
           {renderContent()}
         </TooltipProvider>
       </main>
+
+      <footer className="text-center py-4">
+        <p className="text-xs text-muted-foreground">
+          © 2025 Sulaiman Alfaifi — All rights reserved
+        </p>
+      </footer>
     </div>
   );
 }
