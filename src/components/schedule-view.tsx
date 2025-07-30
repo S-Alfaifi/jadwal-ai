@@ -22,7 +22,7 @@ interface PositionedEvent {
   track: number;
 }
 
-const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number }) => {
+const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number, showSectionNames: boolean }) => {
     // Visual grid is 30-min intervals
     const visualTimeSlots = Array.from({ length: (endHour - startHour) * 2 }, (_, i) => {
         const hour = startHour + Math.floor(i / 2);
@@ -156,7 +156,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                              title={`${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`}>
                             <div>
                                 <p className="font-bold text-sm text-black/90 truncate">{item.course.name}</p>
-                                <p className="text-xs text-black/80 truncate">{item.section.name} ({item.type})</p>
+                                {showSectionNames && <p className="text-xs text-black/80 truncate">{item.section.name} ({item.type})</p>}
                             </div>
                             <div className="flex justify-between items-end mt-1">
                                 <span className="font-code font-bold text-lg text-black/80">{item.time.startTime}</span>
@@ -173,12 +173,13 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
 interface ScheduleViewProps {
   courses: Course[];
   schedule: Schedule | null;
+  showSectionNames: boolean;
 }
 
 export const ScheduleView = forwardRef<{
     scheduleGrid: HTMLDivElement | null;
     summary: HTMLDivElement | null;
-  }, ScheduleViewProps>(({ courses, schedule }, ref) => {
+  }, ScheduleViewProps>(({ courses, schedule, showSectionNames }, ref) => {
   const scheduleGridRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
 
@@ -260,7 +261,7 @@ export const ScheduleView = forwardRef<{
       <Card>
         <CardContent className="p-0" ref={scheduleGridRef}>
             <div className="overflow-x-auto">
-                <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} />
+                <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} showSectionNames={showSectionNames} />
             </div>
         </CardContent>
       </Card>

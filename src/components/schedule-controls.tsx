@@ -1,11 +1,13 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Download } from "lucide-react";
+import { ArrowLeft, ArrowRight, Download, EyeOff } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface ScheduleControlsProps {
   current: number;
@@ -13,6 +15,8 @@ interface ScheduleControlsProps {
   onPrev: () => void;
   onNext: () => void;
   onSaveImage: () => void;
+  showSectionNames: boolean;
+  onToggleShowSectionNames: () => void;
 }
 
 export function ScheduleControls({
@@ -20,7 +24,9 @@ export function ScheduleControls({
   total,
   onPrev,
   onNext,
-  onSaveImage
+  onSaveImage,
+  showSectionNames,
+  onToggleShowSectionNames
 }: ScheduleControlsProps) {
   return (
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 rounded-lg bg-card border">
@@ -33,6 +39,26 @@ export function ScheduleControls({
         )}
       </div>
       <div className="flex items-center gap-4 flex-wrap justify-center">
+
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <div className="flex items-center space-x-2">
+                    <Switch
+                        id="show-section-names"
+                        checked={showSectionNames}
+                        onCheckedChange={onToggleShowSectionNames}
+                    />
+                    <Label htmlFor="show-section-names" className="flex items-center gap-2 text-muted-foreground">
+                        <EyeOff className="h-4 w-4" />
+                        <span>Hide Section Names</span>
+                    </Label>
+                </div>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Toggle the visibility of section names in the schedule.</p>
+            </TooltipContent>
+        </Tooltip>
+
 
         <Tooltip>
           <TooltipTrigger asChild>
