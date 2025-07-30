@@ -45,11 +45,11 @@ export function ScheduleControls({
                 <div className="flex items-center space-x-2">
                     <Switch
                         id="show-section-names"
-                        checked={!showSectionNames}
+                        checked={showSectionNames}
                         onCheckedChange={onToggleShowSectionNames}
                     />
                     <Label htmlFor="show-section-names" className="flex items-center gap-2 text-muted-foreground">
-                        {!showSectionNames && <Eye className="h-4 w-4" />}
+                        {!showSectionNames && <EyeOff className="h-4 w-4" />}
                         <span>Section Names</span>
                     </Label>
                 </div>
