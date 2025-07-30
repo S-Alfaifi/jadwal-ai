@@ -130,8 +130,8 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                 {/* Positioned Event Items */}
                 {positionedEvents.map((item, eventIndex) => {
                     const startCol = ((item.startMinutes - startHour * 60) / 30);
-                    const durationCols = (item.endMinutes - item.startMinutes) / 30;
-                    
+                    const durationCols = Math.ceil((item.endMinutes - item.startMinutes) / 30);
+
                     const dayRowStart = ALL_DAYS.slice(0, ALL_DAYS.indexOf(item.day)).reduce((acc, d) => acc + dayTrackCounts[d], 0) + 1;
                     const rowStart = dayRowStart + item.track;
 
