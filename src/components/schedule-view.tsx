@@ -136,8 +136,8 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
 
                 {/* Positioned Event Items */}
                 {positionedEvents.map((item, eventIndex) => {
-                    const startCol = ((item.startMinutes - startHour * 60) / layoutInterval) + 1;
-                    const durationCols = (item.endMinutes - item.startMinutes) / layoutInterval;
+                    const startCol = Math.floor((item.startMinutes - startHour * 60) / layoutInterval) + 1;
+                    const endCol = Math.ceil((item.endMinutes - startHour * 60) / layoutInterval) + 1;
 
                     const dayRowStart = ALL_DAYS.slice(0, ALL_DAYS.indexOf(item.day)).reduce((acc, d) => acc + dayTrackCounts[d], 0) + 1;
                     const rowStart = dayRowStart + item.track;
@@ -148,7 +148,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                             className="rounded-lg p-2 flex flex-col justify-between relative overflow-hidden text-black m-1 shadow-md"
                             style={{
                                 gridRow: `${rowStart} / span 1`,
-                                gridColumn: `${startCol} / span ${durationCols}`,
+                                gridColumn: `${startCol} / ${endCol}`,
                                 backgroundColor: item.course.color,
                                 zIndex: 10,
                                 minHeight: '72px'
