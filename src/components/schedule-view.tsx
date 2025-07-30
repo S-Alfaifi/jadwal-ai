@@ -96,7 +96,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
     return (
         <div className="grid grid-cols-[auto_1fr] bg-background font-sans">
             {/* Top-left corner */}
-            <div className="sticky left-0 top-0 z-30 flex items-center justify-center bg-card border-r border-b">
+            <div className="sticky left-0 top-0 z-30 flex items-center justify-center bg-background border-r border-b">
                 <div className="text-xs font-medium text-muted-foreground p-2">Time</div>
             </div>
             
@@ -111,7 +111,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
             
             <div className="sticky left-0 z-20 flex flex-col">
                 {ALL_DAYS.map((day) => (
-                    <div key={day} className="flex-grow flex items-center justify-center p-2 font-bold text-primary-foreground bg-card border-b border-r" style={{minHeight: `${dayTrackCounts[day] * 80}px`}}>
+                    <div key={day} className="flex-grow flex items-center justify-center p-2 font-bold text-primary-foreground bg-background border-b border-r" style={{minHeight: `${dayTrackCounts[day] * 80}px`}}>
                        {day}
                     </div>
                 ))}
@@ -145,7 +145,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                     return (
                         <div
                             key={`${item.course.id}-${item.section.id}-${item.day}-${item.type}-${eventIndex}`}
-                            className="rounded-lg p-2 flex flex-col justify-between relative overflow-hidden text-black m-1"
+                            className="rounded-lg p-2 flex flex-col justify-between relative overflow-hidden text-black m-1 shadow-md"
                             style={{
                                 gridRow: `${rowStart} / span 1`,
                                 gridColumn: `${startCol} / ${endCol}`,
