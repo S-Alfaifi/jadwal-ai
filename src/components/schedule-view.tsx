@@ -5,6 +5,7 @@ import React, { useMemo, forwardRef, useRef, useImperativeHandle } from 'react';
 import type { Course, Schedule, Section, Day, SectionTime } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const timeToMinutes = (time: string): number => {
   const [h, m] = time.split(':').map(Number);
@@ -170,6 +171,60 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
     );
 }
 
+const VerticalLayout = ({ scheduledItems }: { scheduledItems: { course: Course; section: Section; }[] }) => {
+    const eventsByDay = useMemo(() => {
+        const byDay: Record<Day, { course: Course; section: Section; time: SectionTime; type: 'Lecture' | 'Lab' }[]> = {
+            Sun: [], Mon: [], Tue: [], Wed: [], Thu: []
+        };
+        scheduledItems.forEach(({ course, section }) => {
+            const processTime = (type: 'Lecture' | 'Lab', time: SectionTime | undefined) => {
+                if (!time) return;
+                time.days.forEach(day => {
+                    byDay[day].push({ course, section, time, type });
+                });
+            };
+            processTime('Lecture', section.lecture);
+            processTime('Lab', section.lab);
+        });
+
+        for (const day of ALL_DAYS) {
+            byDay[day].sort((a, b) => timeToMinutes(a.time.startTime) - timeToMinutes(b.time.startTime));
+        }
+
+        return byDay;
+    }, [scheduledItems]);
+
+    return (
+        <div className="space-y-6">
+            {ALL_DAYS.map(day => (
+                eventsByDay[day].length > 0 && (
+                    <div key={day}>
+                        <h3 className="text-lg font-bold text-primary-foreground mb-3 pl-2">{day}</h3>
+                        <div className="space-y-3">
+                            {eventsByDay[day].map((item, index) => (
+                                <div
+                                    key={`${item.course.id}-${item.section.id}-${day}-${index}`}
+                                    className="flex items-start gap-3 p-3 rounded-lg"
+                                    style={{ backgroundColor: `${item.course.color}20` }}
+                                >
+                                    <div className="w-1.5 h-full rounded-full" style={{ backgroundColor: item.course.color }} />
+                                    <div className="flex-grow">
+                                        <div className="font-bold text-foreground">{item.course.name}</div>
+                                        <div className="text-sm text-muted-foreground">{item.section.name} ({item.type})</div>
+                                        <div className="text-sm font-mono mt-1 text-muted-foreground">
+                                            {item.time.startTime} - {item.time.endTime}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )
+            ))}
+        </div>
+    );
+}
+
 interface ScheduleViewProps {
   courses: Course[];
   schedule: Schedule | null;
@@ -181,6 +236,7 @@ export const ScheduleView = forwardRef<{
   }, ScheduleViewProps>(({ courses, schedule }, ref) => {
   const scheduleGridRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   useImperativeHandle(ref, () => ({
     scheduleGrid: scheduleGridRef.current,
@@ -258,10 +314,14 @@ export const ScheduleView = forwardRef<{
   return (
     <div className="mt-8">
       <Card>
-        <CardContent className="p-0" ref={scheduleGridRef}>
-           <div className="overflow-x-auto">
-             <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} />
-           </div>
+        <CardContent className="p-4 md:p-0" ref={scheduleGridRef}>
+           {isMobile ? (
+              <VerticalLayout scheduledItems={scheduledItems} />
+           ) : (
+             <div className="overflow-x-auto">
+               <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} />
+             </div>
+           )}
         </CardContent>
       </Card>
       
@@ -271,3 +331,5 @@ export const ScheduleView = forwardRef<{
 });
 
 ScheduleView.displayName = 'ScheduleView';
+
+    
