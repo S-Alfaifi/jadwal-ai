@@ -5,6 +5,7 @@ import React, { useMemo, forwardRef, useRef, useImperativeHandle } from 'react';
 import type { Course, Schedule, Section, Day, SectionTime } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BookText, FlaskConical } from 'lucide-react';
 
 const timeToMinutes = (time: string): number => {
   const [h, m] = time.split(':').map(Number);
@@ -22,7 +23,7 @@ interface PositionedEvent {
   track: number;
 }
 
-const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number, showSectionNames: boolean }) => {
+const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames, showClassTypes }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number, showSectionNames: boolean, showClassTypes: boolean }) => {
     // Visual grid is 30-min intervals
     const visualTimeSlots = Array.from({ length: (endHour - startHour) * 2 }, (_, i) => {
         const hour = startHour + Math.floor(i / 2);
@@ -156,7 +157,16 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                              title={`${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`}>
                             <div>
                                 <p className="font-bold text-sm text-black/90 truncate">{item.course.name}</p>
-                                {showSectionNames && <p className="text-xs text-black/80 truncate">{item.section.name} ({item.type})</p>}
+                                {showSectionNames && <p className="text-xs text-black/80 truncate">{item.section.name}</p>}
+                                {showClassTypes && (
+                                  <div className="flex items-center gap-1.5 text-xs text-black/80 mt-1">
+                                    {item.type === 'Lecture' 
+                                        ? <BookText className="h-3 w-3" /> 
+                                        : <FlaskConical className="h-3 w-3" />
+                                    }
+                                    <span>{item.type}</span>
+                                  </div>
+                                )}
                             </div>
                             <div className="flex justify-between items-end mt-1">
                                 <span className="font-code font-bold text-lg text-black/80">{item.time.startTime}</span>
@@ -174,12 +184,13 @@ interface ScheduleViewProps {
   courses: Course[];
   schedule: Schedule | null;
   showSectionNames: boolean;
+  showClassTypes: boolean;
 }
 
 export const ScheduleView = forwardRef<{
     scheduleGrid: HTMLDivElement | null;
     summary: HTMLDivElement | null;
-  }, ScheduleViewProps>(({ courses, schedule, showSectionNames }, ref) => {
+  }, ScheduleViewProps>(({ courses, schedule, showSectionNames, showClassTypes }, ref) => {
   const scheduleGridRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
 
@@ -261,7 +272,7 @@ export const ScheduleView = forwardRef<{
       <Card>
         <CardContent className="p-0" ref={scheduleGridRef}>
             <div className="overflow-x-auto">
-                <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} showSectionNames={showSectionNames} />
+                <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} showSectionNames={showSectionNames} showClassTypes={showClassTypes} />
             </div>
         </CardContent>
       </Card>

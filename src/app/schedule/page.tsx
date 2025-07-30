@@ -20,6 +20,7 @@ export default function SchedulePage() {
   const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null);
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
   const [showSectionNames, setShowSectionNames] = useState(true);
+  const [showClassTypes, setShowClassTypes] = useState(true);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -159,6 +160,8 @@ export default function SchedulePage() {
             onSaveImage={handleSaveImage}
             showSectionNames={showSectionNames}
             onToggleShowSectionNames={() => setShowSectionNames(prev => !prev)}
+            showClassTypes={showClassTypes}
+            onToggleShowClassTypes={() => setShowClassTypes(prev => !prev)}
           />
            {excludedCoursesForThisSchedule.length > 0 && (
             <Alert variant="destructive" className="mt-4 bg-destructive/10">
@@ -182,6 +185,7 @@ export default function SchedulePage() {
             courses={includedCoursesInSchedule}
             schedule={currentSchedule}
             showSectionNames={showSectionNames}
+            showClassTypes={showClassTypes}
           />
 
         </>

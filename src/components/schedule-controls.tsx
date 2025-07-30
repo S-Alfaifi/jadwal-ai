@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Download, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, ArrowRight, Download, Eye, EyeOff, BookText } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -17,6 +17,8 @@ interface ScheduleControlsProps {
   onSaveImage: () => void;
   showSectionNames: boolean;
   onToggleShowSectionNames: () => void;
+  showClassTypes: boolean;
+  onToggleShowClassTypes: () => void;
 }
 
 export function ScheduleControls({
@@ -26,7 +28,9 @@ export function ScheduleControls({
   onNext,
   onSaveImage,
   showSectionNames,
-  onToggleShowSectionNames
+  onToggleShowSectionNames,
+  showClassTypes,
+  onToggleShowClassTypes,
 }: ScheduleControlsProps) {
   return (
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 rounded-lg bg-card border">
@@ -39,6 +43,25 @@ export function ScheduleControls({
         )}
       </div>
       <div className="flex items-center gap-4 flex-wrap justify-center">
+
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <div className="flex items-center space-x-2">
+                    <Switch
+                        id="show-class-types"
+                        checked={showClassTypes}
+                        onCheckedChange={onToggleShowClassTypes}
+                    />
+                    <Label htmlFor="show-class-types" className="flex items-center gap-2 text-muted-foreground">
+                        {showClassTypes && <BookText className="h-4 w-4" />}
+                        <span>Class Types</span>
+                    </Label>
+                </div>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Toggle the visibility of class types (Lecture/Lab).</p>
+            </TooltipContent>
+        </Tooltip>
 
         <Tooltip>
             <TooltipTrigger asChild>
