@@ -151,7 +151,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                                 <p className="font-bold text-sm text-black/90 truncate">{item.course.name}</p>
                                 <p className="text-xs text-black/80 truncate">{item.section.name} ({item.type})</p>
                             </div>
-                            <div className="flex justify-between items-end text-sm text-black/70 font-mono mt-1">
+                            <div className="flex justify-between items-end text-base font-bold text-black/80 font-code mt-1">
                                 <span>{item.time.startTime}</span>
                                 <span>{item.time.endTime}</span>
                             </div>
