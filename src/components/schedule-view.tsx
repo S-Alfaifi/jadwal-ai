@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useMemo, forwardRef, useRef, useImperativeHandle, useEffect, useState } from 'react';
+import React, { useMemo, forwardRef, useRef, useImperativeHandle } from 'react';
 import type { Course, Schedule, Section, Day, SectionTime } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,17 +29,6 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
         const minute = i % 2 === 0 ? '00' : '30';
         return `${String(hour).padStart(2, '0')}:${minute}`;
     });
-
-    const gridRef = useRef<HTMLDivElement>(null);
-    const [bgColor, setBgColor] = useState('transparent');
-
-    useEffect(() => {
-        if (gridRef.current) {
-            const computedStyle = window.getComputedStyle(gridRef.current);
-            setBgColor(computedStyle.backgroundColor);
-        }
-    }, [scheduledItems]);
-
 
     // Layout grid is 5-min intervals for precision
     const layoutInterval = 5; // minutes
@@ -105,7 +94,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
     }, [scheduledItems]);
     
     return (
-        <div ref={gridRef} className="grid grid-cols-[auto_1fr] bg-background font-sans" style={{ backgroundColor: bgColor }}>
+        <div className="grid grid-cols-[auto_1fr] bg-background font-sans">
             {/* Top-left corner */}
             <div className="sticky left-0 top-0 z-30 flex items-center justify-center bg-card border-r border-b">
                 <div className="text-xs font-medium text-muted-foreground p-2">Time</div>
@@ -282,6 +271,3 @@ export const ScheduleView = forwardRef<{
 });
 
 ScheduleView.displayName = 'ScheduleView';
-
-    
-
