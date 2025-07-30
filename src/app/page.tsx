@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { PlusCircle, BookOpen, Upload } from "lucide-react";
+import { PlusCircle, BookOpen, Upload, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AddCourseForm } from "@/components/add-course-form";
@@ -14,6 +14,8 @@ import type { Course, Section } from "@/lib/types";
 import { generatePastelColor } from "@/lib/colors";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useAuth } from "@/hooks/use-auth";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type CourseFormData = Omit<Course, 'id' | 'color' | 'sections' | 'isEnabled'> & { id?: string, sections: (Omit<Section, 'id' | 'isEnabled'> & {id?: string})[] };
 
@@ -24,29 +26,40 @@ export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { user, loading, logout } = useAuth();
 
   useEffect(() => {
-    setIsMounted(true);
-    const savedCourses = localStorage.getItem("courses");
-    if (savedCourses) {
-      const parsedCourses: Course[] = JSON.parse(savedCourses);
-      const coursesWithDefaults = parsedCourses.map(course => ({
-          ...course,
-          isEnabled: course.isEnabled !== undefined ? course.isEnabled : true,
-          sections: course.sections.map(section => ({
-              ...section,
-              isEnabled: section.isEnabled !== undefined ? section.isEnabled : true
-          }))
-      }));
-      setCourses(coursesWithDefaults);
+    if (!loading && !user) {
+      router.replace("/login");
     }
-  }, []);
+  }, [user, loading, router]);
   
   useEffect(() => {
-    if(isMounted) {
+    setIsMounted(true);
+    if (user) {
+      const savedCourses = localStorage.getItem(`courses_${user.uid}`);
+      if (savedCourses) {
+        const parsedCourses: Course[] = JSON.parse(savedCourses);
+        const coursesWithDefaults = parsedCourses.map(course => ({
+            ...course,
+            isEnabled: course.isEnabled !== undefined ? course.isEnabled : true,
+            sections: course.sections.map(section => ({
+                ...section,
+                isEnabled: section.isEnabled !== undefined ? section.isEnabled : true
+            }))
+        }));
+        setCourses(coursesWithDefaults);
+      }
+    }
+  }, [user]);
+  
+  useEffect(() => {
+    if(isMounted && user) {
+      localStorage.setItem(`courses_${user.uid}`, JSON.stringify(courses));
+      // Also save to a global key for schedule page to access
       localStorage.setItem("courses", JSON.stringify(courses));
     }
-  }, [courses, isMounted]);
+  }, [courses, isMounted, user]);
 
   const handleAddCourseClick = () => {
     setEditingCourse(null);
@@ -148,8 +161,30 @@ export default function Home() {
     router.push("/schedule");
   };
 
+  if (loading || !user) {
+    return (
+      <div className="flex flex-col min-h-screen">
+         <header className="py-6 px-4 md:px-8 border-b flex justify-between items-center">
+          <Logo />
+          <Skeleton className="h-8 w-24" />
+        </header>
+        <main className="flex-grow container mx-auto p-4 md:p-8">
+            <div className="text-center mb-12">
+              <Skeleton className="h-12 w-1/2 mx-auto" />
+              <Skeleton className="h-4 w-3/4 mx-auto mt-4" />
+            </div>
+            <div className="space-y-4 max-w-4xl mx-auto">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+        </main>
+      </div>
+    );
+  }
+
+
   if (!isMounted) {
-    return null; // Or a loading spinner
+    return null;
   }
 
   return (
@@ -157,7 +192,19 @@ export default function Home() {
       <div className="flex flex-col min-h-screen">
         <header className="py-6 px-4 md:px-8 border-b flex justify-between items-center">
           <Logo />
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={logout}>
+                  <LogOut />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Log Out</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </header>
         
         <main className="flex-grow container mx-auto p-4 md:p-8">
@@ -166,7 +213,7 @@ export default function Home() {
               Create Your Schedule
             </h1>
             <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
-              Add your courses below. Toggle courses or specific sections to include them in the final schedule.
+              Welcome, {user.email}! Add your courses below. Toggle courses or specific sections to include them in the final schedule.
             </p>
           </div>
 
