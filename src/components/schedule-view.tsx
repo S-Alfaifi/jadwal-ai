@@ -145,7 +145,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                     return (
                         <div
                             key={`${item.course.id}-${item.section.id}-${item.day}-${item.type}-${eventIndex}`}
-                            className="rounded-lg p-2 flex flex-col justify-between relative overflow-hidden text-black m-1 shadow-md"
+                            className="rounded-lg p-2 flex flex-col justify-between relative overflow-hidden text-black m-1"
                             style={{
                                 gridRow: `${rowStart} / span 1`,
                                 gridColumn: `${startCol} / ${endCol}`,
