@@ -155,7 +155,7 @@ export default function EditorPage() {
   return (
     <TooltipProvider>
       <div className="flex flex-col min-h-screen">
-        <header className="py-6 px-4 md:px-8 border-b flex justify-between items-center">
+        <header className="py-6 px-4 md:px-8 border-b flex justify-between items-center bg-background/80 backdrop-blur-sm sticky top-0 z-50">
           <Logo />
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -224,7 +224,7 @@ export default function EditorPage() {
           </div>
         </main>
 
-        <footer className="sticky bottom-0 bg-background/80 backdrop-blur-sm p-4 border-t">
+        <footer className="sticky bottom-0 bg-background/80 backdrop-blur-sm p-4 border-t z-50">
             <div className="max-w-4xl mx-auto">
               <Button size="lg" className="w-full" onClick={handleGenerateSchedule} disabled={courses.filter(c => c.isEnabled).length === 0}>
                 Generate Schedule
