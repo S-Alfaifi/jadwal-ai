@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Download, EyeOff } from "lucide-react";
+import { ArrowLeft, ArrowRight, Download, Eye, EyeOff } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -45,12 +45,12 @@ export function ScheduleControls({
                 <div className="flex items-center space-x-2">
                     <Switch
                         id="show-section-names"
-                        checked={showSectionNames}
+                        checked={!showSectionNames}
                         onCheckedChange={onToggleShowSectionNames}
                     />
                     <Label htmlFor="show-section-names" className="flex items-center gap-2 text-muted-foreground">
-                        <EyeOff className="h-4 w-4" />
-                        <span>Hide Section Names</span>
+                        {!showSectionNames && <Eye className="h-4 w-4" />}
+                        <span>Section Names</span>
                     </Label>
                 </div>
             </TooltipTrigger>
