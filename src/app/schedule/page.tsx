@@ -193,7 +193,7 @@ export default function SchedulePage() {
              We couldn't generate any possible schedule with the courses and sections you enabled.
            </p>
         )}
-        <Button onClick={() => router.push('/')} className="mt-6">
+        <Button onClick={() => router.push('/editor')} className="mt-6">
           Go Back and Edit Courses
         </Button>
       </div>
@@ -210,7 +210,7 @@ export default function SchedulePage() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" onClick={() => router.push('/')}>
+                    <Button variant="outline" onClick={() => router.push('/editor')}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Edit
                     </Button>
