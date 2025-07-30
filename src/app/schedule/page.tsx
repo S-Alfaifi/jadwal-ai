@@ -189,7 +189,7 @@ export default function SchedulePage() {
             showClassTypes={showClassTypes}
             onToggleShowClassTypes={() => setShowClassTypes(prev => !prev)}
           />
-           {(excludedCoursesForThisSchedule.length > 0 || (conflictForThisSchedule && includedCoursesInSchedule.length === courses.filter(c => c.isEnabled).length))) && (
+           {(excludedCoursesForThisSchedule.length > 0 || (conflictForThisSchedule && includedCoursesInSchedule.length === courses.filter(c => c.isEnabled).length)) && (
             <Alert variant="destructive" className="mt-4 bg-destructive/10">
               <AlertTriangle className="h-4 w-4 text-destructive-foreground/90" />
               <AlertTitle className="font-bold text-foreground">
