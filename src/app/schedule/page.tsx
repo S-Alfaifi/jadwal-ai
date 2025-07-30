@@ -14,7 +14,7 @@ import type { Course, Schedule, GenerationResult, Conflict } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from '@/components/theme-toggle';
-import { suggestWorkarounds, SuggestWorkaroundsInput } from '@/ai/flows/suggest-schedule-workarounds';
+import { suggestWorkarounds, type SuggestWorkaroundsInput } from '@/ai/flows/suggest-schedule-workarounds';
 
 export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);

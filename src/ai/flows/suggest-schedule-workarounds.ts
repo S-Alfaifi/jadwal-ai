@@ -8,54 +8,12 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
-import type { Course, Day } from '@/lib/types';
-
-const SectionTimeSchema = z.object({
-  days: z.array(z.custom<Day>()),
-  startTime: z.string(),
-  endTime: z.string(),
-});
-
-const SectionSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  lecture: SectionTimeSchema,
-  lab: SectionTimeSchema.optional(),
-  isEnabled: z.boolean(),
-});
-
-const CourseSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  finalExamPeriod: z.number().optional(),
-  sections: z.array(SectionSchema),
-  color: z.string(),
-  isEnabled: z.boolean(),
-});
-
-export const SuggestWorkaroundsInputSchema = z.object({
-  conflictingCourses: z
-    .array(CourseSchema)
-    .describe('The list of courses that have a scheduling conflict.'),
-  conflictType: z
-    .enum(['time', 'exam'])
-    .describe('The type of conflict.'),
-});
-export type SuggestWorkaroundsInput = z.infer<
-  typeof SuggestWorkaroundsInputSchema
->;
-
-export const SuggestWorkaroundsOutputSchema = z.object({
-  suggestions: z
-    .array(z.string())
-    .describe(
-      'A list of clear, actionable suggestions for the user to resolve the conflict.'
-    ),
-});
-export type SuggestWorkaroundsOutput = z.infer<
-  typeof SuggestWorkaroundsOutputSchema
->;
+import {
+  SuggestWorkaroundsInputSchema,
+  SuggestWorkaroundsOutputSchema,
+  type SuggestWorkaroundsInput,
+  type SuggestWorkaroundsOutput,
+} from './types';
 
 export async function suggestWorkarounds(
   input: SuggestWorkaroundsInput
@@ -100,3 +58,6 @@ const suggestWorkaroundsFlow = ai.defineFlow(
     return output!;
   }
 );
+
+// Re-export types for convenience in other parts of the app
+export type { SuggestWorkaroundsInput, SuggestWorkaroundsOutput };
