@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useMemo, forwardRef, useRef, useImperativeHandle } from 'react';
+import React, { useMemo, forwardRef, useRef, useImperativeHandle, useEffect, useState } from 'react';
 import type { Course, Schedule, Section, Day, SectionTime } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +29,17 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
         const minute = i % 2 === 0 ? '00' : '30';
         return `${String(hour).padStart(2, '0')}:${minute}`;
     });
+
+    const gridRef = useRef<HTMLDivElement>(null);
+    const [bgColor, setBgColor] = useState('transparent');
+
+    useEffect(() => {
+        if (gridRef.current) {
+            const computedStyle = window.getComputedStyle(gridRef.current);
+            setBgColor(computedStyle.backgroundColor);
+        }
+    }, [scheduledItems]);
+
 
     // Layout grid is 5-min intervals for precision
     const layoutInterval = 5; // minutes
@@ -94,7 +105,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
     }, [scheduledItems]);
     
     return (
-        <div className="grid grid-cols-[auto_1fr] bg-background font-sans">
+        <div ref={gridRef} className="grid grid-cols-[auto_1fr] bg-background font-sans" style={{ backgroundColor: bgColor }}>
             {/* Top-left corner */}
             <div className="sticky left-0 top-0 z-30 flex items-center justify-center bg-card border-r border-b">
                 <div className="text-xs font-medium text-muted-foreground p-2">Time</div>
@@ -158,9 +169,9 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                                 <p className="font-bold text-sm text-black/90 truncate">{item.course.name}</p>
                                 <p className="text-xs text-black/80 truncate">{item.section.name} ({item.type})</p>
                             </div>
-                            <div className="flex justify-between items-end text-base font-bold text-black/80 font-code mt-1">
-                                <span className="font-code font-bold text-lg">{item.time.startTime}</span>
-                                <span className="font-code font-bold text-lg">{item.time.endTime}</span>
+                            <div className="flex justify-between items-end mt-1">
+                                <span className="font-code font-bold text-lg text-black/80">{item.time.startTime}</span>
+                                <span className="font-code font-bold text-lg text-black/80">{item.time.endTime}</span>
                             </div>
                         </div>
                     );
@@ -273,3 +284,4 @@ export const ScheduleView = forwardRef<{
 ScheduleView.displayName = 'ScheduleView';
 
     
+
