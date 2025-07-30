@@ -62,9 +62,8 @@ export default function WelcomePage() {
             </p>
             <div className="mt-6">
                  <a href="https://www.linkedin.com/in/sulaiman-alfaifi1" target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline">
-                        <Linkedin className="mr-2 h-4 w-4" />
-                        Connect on LinkedIn
+                    <Button variant="outline" size="icon" aria-label="Connect on LinkedIn">
+                        <Linkedin className="h-4 w-4" />
                     </Button>
                 </a>
             </div>
