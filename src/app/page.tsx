@@ -61,7 +61,7 @@ export default function WelcomePage() {
                 Note: Built with the help of AI tools as part of a learning journey in smart web development.
             </p>
             <div className="mt-6">
-                 <a href="https://linkedin.com/in/your-profile" target="_blank" rel="noopener noreferrer">
+                 <a href="https://www.linkedin.com/in/sulaiman-alfaifi1" target="_blank" rel="noopener noreferrer">
                     <Button variant="outline">
                         <Linkedin className="mr-2 h-4 w-4" />
                         Connect on LinkedIn
