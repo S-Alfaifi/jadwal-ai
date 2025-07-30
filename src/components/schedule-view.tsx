@@ -138,7 +138,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                     return (
                         <div
                             key={`${item.course.id}-${item.section.id}-${item.day}-${item.type}-${eventIndex}`}
-                            className="rounded-lg p-2 flex flex-col justify-center relative overflow-hidden text-black m-1 shadow-md"
+                            className="rounded-lg p-2 flex flex-col justify-between relative overflow-hidden text-black m-1 shadow-md"
                             style={{
                                 gridRow: `${rowStart} / span 1`,
                                 gridColumn: `${startCol + 1} / span ${durationCols}`,
@@ -148,11 +148,12 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour }: { scheduledIte
                             }}
                              title={`${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`}>
                             <div>
-                                <p className="font-bold text-sm text-black/80 truncate">{item.course.name}</p>
-                                <p className="text-xs text-black/70 truncate">{item.section.name} ({item.type})</p>
+                                <p className="font-bold text-sm text-black/90 truncate">{item.course.name}</p>
+                                <p className="text-xs text-black/80 truncate">{item.section.name} ({item.type})</p>
                             </div>
-                            <div className="text-xs text-black/60 font-mono mt-1">
-                                {item.time.startTime} - {item.time.endTime}
+                            <div className="flex justify-between items-end text-sm text-black/70 font-mono mt-1">
+                                <span>{item.time.startTime}</span>
+                                <span>{item.time.endTime}</span>
                             </div>
                         </div>
                     );
