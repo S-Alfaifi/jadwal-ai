@@ -7,12 +7,12 @@ export interface SectionTime {
   days: Day[];
   startTime: string; // "HH:mm"
   endTime: string; // "HH:mm"
+  classroom?: string;
 }
 
 export interface Section {
   id: string;
   name: string;
-  classroom?: string;
   lecture: SectionTime;
   lab?: SectionTime;
   isEnabled: boolean;

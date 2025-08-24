@@ -21,6 +21,7 @@ export default function SchedulePage() {
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
   const [showSectionNames, setShowSectionNames] = useState(true);
   const [showClassTypes, setShowClassTypes] = useState(true);
+  const [showClassroom, setShowClassroom] = useState(true);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -163,6 +164,8 @@ export default function SchedulePage() {
             onToggleShowSectionNames={() => setShowSectionNames(prev => !prev)}
             showClassTypes={showClassTypes}
             onToggleShowClassTypes={() => setShowClassTypes(prev => !prev)}
+            showClassroom={showClassroom}
+            onToggleShowClassroom={() => setShowClassroom(prev => !prev)}
           />
            {(excludedCoursesForThisSchedule.length > 0 || (conflictForThisSchedule && includedCoursesInSchedule.length === courses.filter(c => c.isEnabled).length)) && (
             <Alert variant="destructive" className="mt-4 bg-destructive/10">
@@ -191,6 +194,7 @@ export default function SchedulePage() {
             schedule={currentSchedule}
             showSectionNames={showSectionNames}
             showClassTypes={showClassTypes}
+            showClassroom={showClassroom}
           />
 
         </>

@@ -23,7 +23,7 @@ interface PositionedEvent {
   track: number;
 }
 
-const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames, showClassTypes }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number, showSectionNames: boolean, showClassTypes: boolean }) => {
+const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames, showClassTypes, showClassroom }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number, showSectionNames: boolean, showClassTypes: boolean, showClassroom: boolean }) => {
     // Visual grid is 30-min intervals
     const visualTimeSlots = Array.from({ length: (endHour - startHour) * 2 }, (_, i) => {
         const hour = startHour + Math.floor(i / 2);
@@ -143,6 +143,8 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                     const dayRowStart = ALL_DAYS.slice(0, ALL_DAYS.indexOf(item.day)).reduce((acc, d) => acc + dayTrackCounts[d], 0) + 1;
                     const rowStart = dayRowStart + item.track;
 
+                    const fullTitle = `${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`;
+
                     return (
                         <div
                             key={`${item.course.id}-${item.section.id}-${item.day}-${item.type}-${eventIndex}`}
@@ -154,12 +156,12 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                 zIndex: 10,
                                 minHeight: '72px'
                             }}
-                             title={`${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`}>
-                            <div className="flex flex-col">
+                             title={fullTitle}>
+                            <div className="flex flex-col overflow-hidden">
                                 <div className="flex flex-wrap items-baseline gap-x-2">
-                                    <p className="font-bold text-sm text-black/90">{item.course.name}</p>
+                                    <p className="font-bold text-sm text-black/90 truncate" title={item.course.name}>{item.course.name}</p>
                                      {showClassTypes && (
-                                        <div className="flex items-center gap-1 font-code text-xs text-black/70">
+                                        <div className="flex items-center gap-1 font-code text-xs text-black/70 flex-shrink-0">
                                             {item.type === 'Lecture' 
                                                 ? <BookText className="h-3 w-3" /> 
                                                 : <FlaskConical className="h-3 w-3" />
@@ -168,14 +170,20 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                         </div>
                                     )}
                                 </div>
-                                {showSectionNames && (
-                                    <p className="text-xs text-black/80 mt-0.5">
-                                        {item.section.name}
-                                        {item.section.classroom && ` (${item.section.classroom})`}
-                                    </p>
-                                )}
+                                <div className="text-xs text-black/80 mt-0.5 truncate">
+                                    {showSectionNames && (
+                                        <span>
+                                            {item.section.name}
+                                        </span>
+                                    )}
+                                     {showClassroom && item.time.classroom && (
+                                        <span className="font-bold ml-1">
+                                             ({item.time.classroom})
+                                        </span>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex justify-between items-end mt-1">
+                            <div className="flex justify-between items-end mt-1 flex-shrink-0">
                                 <span className="font-code font-bold text-lg text-black/80">{item.time.startTime}</span>
                                 <span className="font-code font-bold text-lg text-black/80">{item.time.endTime}</span>
                             </div>
@@ -192,12 +200,13 @@ interface ScheduleViewProps {
   schedule: Schedule | null;
   showSectionNames: boolean;
   showClassTypes: boolean;
+  showClassroom: boolean;
 }
 
 export const ScheduleView = forwardRef<{
     scheduleGrid: HTMLDivElement | null;
     summary: HTMLDivElement | null;
-  }, ScheduleViewProps>(({ courses, schedule, showSectionNames, showClassTypes }, ref) => {
+  }, ScheduleViewProps>(({ courses, schedule, showSectionNames, showClassTypes, showClassroom }, ref) => {
   const scheduleGridRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
 
@@ -263,11 +272,10 @@ export const ScheduleView = forwardRef<{
                   <h4 className="font-bold">{course.name}</h4>
                   <p className="text-sm text-muted-foreground">
                     {section.name}
-                    {section.classroom && ` - ${section.classroom}`}
                   </p>
                   <div className="text-xs mt-2 space-y-1 text-muted-foreground">
-                      <p><b>Lecture:</b> {section.lecture.days.join(', ')} {section.lecture.startTime}-{section.lecture.endTime}</p>
-                      {section.lab && <p><b>Lab:</b> {section.lab.days.join(', ')} {section.lab.startTime}-{section.lab.endTime}</p>}
+                      <p><b>Lecture:</b> {section.lecture.days.join(', ')} {section.lecture.startTime}-{section.lecture.endTime} {section.lecture.classroom && `(${section.lecture.classroom})`}</p>
+                      {section.lab && <p><b>Lab:</b> {section.lab.days.join(', ')} {section.lab.startTime}-{section.lab.endTime} {section.lab.classroom && `(${section.lab.classroom})`}</p>}
                   </div>
                 </div>
               </Card>
@@ -282,7 +290,7 @@ export const ScheduleView = forwardRef<{
       <Card>
         <CardContent className="p-0" ref={scheduleGridRef}>
             <div className="overflow-x-auto">
-                <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} showSectionNames={showSectionNames} showClassTypes={showClassTypes} />
+                <HorizontalLayout scheduledItems={scheduledItems} startHour={startHour} endHour={endHour} showSectionNames={showSectionNames} showClassTypes={showClassTypes} showClassroom={showClassroom} />
             </div>
         </CardContent>
       </Card>

@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Download, Eye, EyeOff, BookText } from "lucide-react";
+import { ArrowLeft, ArrowRight, Download, Eye, EyeOff, BookText, MapPin } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -19,6 +19,8 @@ interface ScheduleControlsProps {
   onToggleShowSectionNames: () => void;
   showClassTypes: boolean;
   onToggleShowClassTypes: () => void;
+  showClassroom: boolean;
+  onToggleShowClassroom: () => void;
 }
 
 export function ScheduleControls({
@@ -31,6 +33,8 @@ export function ScheduleControls({
   onToggleShowSectionNames,
   showClassTypes,
   onToggleShowClassTypes,
+  showClassroom,
+  onToggleShowClassroom,
 }: ScheduleControlsProps) {
   return (
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 rounded-lg bg-card border">
@@ -48,12 +52,31 @@ export function ScheduleControls({
             <TooltipTrigger asChild>
                 <div className="flex items-center space-x-2">
                     <Switch
+                        id="show-classroom"
+                        checked={showClassroom}
+                        onCheckedChange={onToggleShowClassroom}
+                    />
+                    <Label htmlFor="show-classroom" className="flex items-center gap-2 text-muted-foreground">
+                       <MapPin className="h-4 w-4" />
+                        <span>Classroom</span>
+                    </Label>
+                </div>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Toggle the visibility of classroom numbers.</p>
+            </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <div className="flex items-center space-x-2">
+                    <Switch
                         id="show-class-types"
                         checked={showClassTypes}
                         onCheckedChange={onToggleShowClassTypes}
                     />
                     <Label htmlFor="show-class-types" className="flex items-center gap-2 text-muted-foreground">
-                        {showClassTypes && <BookText className="h-4 w-4" />}
+                        <BookText className="h-4 w-4" />
                         <span>Class Types</span>
                     </Label>
                 </div>
@@ -72,7 +95,7 @@ export function ScheduleControls({
                         onCheckedChange={onToggleShowSectionNames}
                     />
                     <Label htmlFor="show-section-names" className="flex items-center gap-2 text-muted-foreground">
-                        {!showSectionNames && <EyeOff className="h-4 w-4" />}
+                        {showSectionNames ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                         <span>Section Names</span>
                     </Label>
                 </div>

@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Clock, CalendarDays, BookText, FlaskConical, AlertCircle } from "lucide-react";
+import { Edit, Trash2, Clock, CalendarDays, BookText, FlaskConical, AlertCircle, MapPin } from "lucide-react";
 import type { Course, SectionTime, Section } from "@/lib/types";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 import { Switch } from "./ui/switch";
@@ -39,6 +39,12 @@ const SectionTimeDisplay = ({ sectionTime, type }: { sectionTime: SectionTime, t
       <Clock className="h-4 w-4" />
       <span className="font-mono">{sectionTime.startTime} - {sectionTime.endTime}</span>
     </div>
+     {sectionTime.classroom && (
+        <div className="flex items-center gap-2 text-muted-foreground md:col-span-3">
+            <MapPin className="h-4 w-4" />
+            <span>{sectionTime.classroom}</span>
+        </div>
+    )}
   </div>
 );
 
@@ -47,13 +53,13 @@ export function CourseCard({ course, onEdit, onDelete, onToggleCourse, onToggleS
   return (
     <Card className={cn("overflow-hidden transition-all hover:shadow-md", !course.isEnabled && "opacity-50")}>
       <CardHeader className="flex flex-row items-start bg-muted/50">
-        <div className="flex-grow">
-          <CardTitle className="flex items-center gap-3">
+        <div className="flex-grow min-w-0 pr-4">
+          <CardTitle className="flex items-start gap-3">
              <Popover>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
-                      <button className="w-4 h-4 rounded-full border" style={{ backgroundColor: course.color }} aria-label="Change course color" />
+                      <button className="w-4 h-4 rounded-full border flex-shrink-0 mt-1.5" style={{ backgroundColor: course.color }} aria-label="Change course color" />
                     </PopoverTrigger>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -73,9 +79,9 @@ export function CourseCard({ course, onEdit, onDelete, onToggleCourse, onToggleS
                     </div>
                 </PopoverContent>
              </Popover>
-            {course.name}
+            <span className="break-words">{course.name}</span>
           </CardTitle>
-           <CardDescription className="mt-1 flex items-center gap-4">
+           <CardDescription className="mt-1 flex items-center gap-4 pl-7">
                 <span>{course.sections.length} Section(s)</span>
                 {course.finalExamPeriod && (
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -85,7 +91,7 @@ export function CourseCard({ course, onEdit, onDelete, onToggleCourse, onToggleS
                 )}
             </CardDescription>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Switch
               checked={course.isEnabled}
               onCheckedChange={(checked) => onToggleCourse(course.id, checked)}
