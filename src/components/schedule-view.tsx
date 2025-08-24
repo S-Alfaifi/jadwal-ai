@@ -148,7 +148,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                     return (
                         <div
                             key={`${item.course.id}-${item.section.id}-${item.day}-${item.type}-${eventIndex}`}
-                            className="rounded-lg p-2 flex flex-col justify-between relative overflow-hidden text-black m-1"
+                            className="rounded-lg p-2 flex flex-col justify-between relative text-black m-1"
                             style={{
                                 gridRow: `${rowStart} / span 1`,
                                 gridColumn: `${startCol} / ${endCol}`,
@@ -157,9 +157,9 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                 minHeight: '72px'
                             }}
                              title={fullTitle}>
-                            <div className="flex flex-col overflow-hidden">
+                            <div className="flex flex-col">
                                 <div className="flex flex-wrap items-baseline gap-x-2">
-                                    <p className="font-bold text-sm text-black/90 truncate" title={item.course.name}>{item.course.name}</p>
+                                    <p className="font-bold text-sm text-black/90 break-words">{item.course.name}</p>
                                      {showClassTypes && (
                                         <div className="flex items-center gap-1 font-code text-xs text-black/70 flex-shrink-0">
                                             {item.type === 'Lecture' 
@@ -170,7 +170,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                         </div>
                                     )}
                                 </div>
-                                <div className="text-xs text-black/80 mt-0.5 truncate">
+                                <div className="text-xs text-black/80 mt-0.5">
                                     {showSectionNames && (
                                         <span>
                                             {item.section.name}
