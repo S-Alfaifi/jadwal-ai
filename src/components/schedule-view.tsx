@@ -142,13 +142,13 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
 
                     const dayRowStart = ALL_DAYS.slice(0, ALL_DAYS.indexOf(item.day)).reduce((acc, d) => acc + dayTrackCounts[d], 0) + 1;
                     const rowStart = dayRowStart + item.track;
-
+                    
                     const fullTitle = `${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`;
 
                     return (
                         <div
                             key={`${item.course.id}-${item.section.id}-${item.day}-${item.type}-${eventIndex}`}
-                            className="rounded-lg p-2 flex flex-col justify-between relative text-black m-1 overflow-hidden"
+                            className="rounded-lg p-2 flex flex-col justify-between relative text-black m-1"
                             style={{
                                 gridRow: `${rowStart} / span 1`,
                                 gridColumn: `${startCol} / ${endCol}`,
@@ -157,10 +157,11 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                 minHeight: '72px'
                             }}>
                             <div className="flex-grow min-h-0" title={fullTitle}>
-                                <div className="flex flex-wrap items-baseline gap-x-2">
-                                    <p className="font-bold text-sm text-black/90 truncate" title={item.course.name}>{item.course.name}</p>
-                                     {showClassTypes && (
-                                        <div className="flex items-center gap-1 font-code text-xs text-black/70 flex-shrink-0">
+                                <p className="font-bold text-sm text-black/90 truncate" title={item.course.name}>{item.course.name}</p>
+                                
+                                <div className="text-xs text-black/80 mt-0.5 flex items-center gap-x-2">
+                                    {showClassTypes && (
+                                        <div className="flex items-center gap-1 font-code flex-shrink-0">
                                             {item.type === 'Lecture' 
                                                 ? <BookText className="h-3 w-3" /> 
                                                 : <FlaskConical className="h-3 w-3" />
@@ -168,17 +169,11 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                             <span>{item.type}</span>
                                         </div>
                                     )}
-                                </div>
-                                <div className="text-xs text-black/80 mt-0.5 truncate">
                                     {showSectionNames && (
-                                        <span>
-                                            {item.section.name}
-                                        </span>
+                                        <span className="truncate">{item.section.name}</span>
                                     )}
-                                     {showClassroom && item.time.classroom && (
-                                        <span className="font-bold ml-1">
-                                             ({item.time.classroom})
-                                        </span>
+                                    {showClassroom && item.time.classroom && (
+                                        <span className="font-bold truncate">({item.time.classroom})</span>
                                     )}
                                 </div>
                             </div>
