@@ -23,6 +23,7 @@ const sectionTimeSchema = z.object({
 const sectionSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Section name is required."),
+  classroom: z.string().optional(),
   lecture: sectionTimeSchema,
   lab: sectionTimeSchema.optional(),
   hasLab: z.boolean().optional(),
@@ -57,7 +58,7 @@ export function AddCourseForm({ onSubmit, course }: AddCourseFormProps) {
     resolver: zodResolver(courseSchema),
     defaultValues: course ? 
       { name: course.name, finalExamPeriod: course.finalExamPeriod, sections: course.sections.map(s => ({...s, hasLab: !!s.lab})) } :
-      { name: "", sections: [{ id: `section_${Date.now()}`, name: "Section 1", lecture: { days: [], startTime: "09:00", endTime: "10:00" }, hasLab: false }] },
+      { name: "", sections: [{ id: `section_${Date.now()}`, name: "Section 1", classroom: "", lecture: { days: [], startTime: "09:00", endTime: "10:00" }, hasLab: false }] },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -162,11 +163,18 @@ export function AddCourseForm({ onSubmit, course }: AddCourseFormProps) {
         <div className="space-y-6">
           {fields.map((field, index) => (
              <div key={field.id} className="p-4 border rounded-lg space-y-4 relative bg-card">
-                <div className="flex justify-between items-center">
-                    <div className="flex-grow space-y-2">
-                        <Label htmlFor={`sections.${index}.name`}>Section Name</Label>
-                        <Input {...register(`sections.${index}.name`)} placeholder="e.g. Section 001, LEC A" />
-                         {errors.sections?.[index]?.name && <p className="text-sm text-destructive">{errors.sections?.[index]?.name?.message}</p>}
+                <div className="flex justify-between items-start">
+                    <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor={`sections.${index}.name`}>Section Name</Label>
+                            <Input {...register(`sections.${index}.name`)} placeholder="e.g. Section 001" />
+                            {errors.sections?.[index]?.name && <p className="text-sm text-destructive">{errors.sections?.[index]?.name?.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor={`sections.${index}.classroom`}>Classroom (Optional)</Label>
+                            <Input {...register(`sections.${index}.classroom`)} placeholder="e.g. Room 101" />
+                             {errors.sections?.[index]?.classroom && <p className="text-sm text-destructive">{errors.sections?.[index]?.classroom?.message}</p>}
+                        </div>
                     </div>
                      {fields.length > 1 && (
                         <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="ml-4 flex-shrink-0">
@@ -204,7 +212,7 @@ export function AddCourseForm({ onSubmit, course }: AddCourseFormProps) {
             type="button"
             variant="outline"
             className="mt-4 w-full"
-            onClick={() => append({ id: `section_${Date.now()}`, name: `Section ${fields.length + 1}`, lecture: { days: [], startTime: "09:00", endTime: "10:00" }, hasLab: false})}
+            onClick={() => append({ id: `section_${Date.now()}`, name: `Section ${fields.length + 1}`, classroom: "", lecture: { days: [], startTime: "09:00", endTime: "10:00" }, hasLab: false})}
           >
             <Plus className="mr-2 h-4 w-4" /> Add Section
           </Button>

@@ -155,9 +155,9 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                 minHeight: '72px'
                             }}
                              title={`${item.course.name} - ${item.section.name} (${item.type})\n${item.time.startTime} - ${item.time.endTime}`}>
-                            <div>
-                                <div className="flex items-baseline gap-2">
-                                    <p className="font-bold text-sm text-black/90 truncate">{item.course.name}</p>
+                            <div className="flex flex-col">
+                                <div className="flex flex-wrap items-baseline gap-x-2">
+                                    <p className="font-bold text-sm text-black/90">{item.course.name}</p>
                                      {showClassTypes && (
                                         <div className="flex items-center gap-1 font-code text-xs text-black/70">
                                             {item.type === 'Lecture' 
@@ -168,7 +168,12 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                         </div>
                                     )}
                                 </div>
-                                {showSectionNames && <p className="text-xs text-black/80 truncate mt-0.5">{item.section.name}</p>}
+                                {showSectionNames && (
+                                    <p className="text-xs text-black/80 mt-0.5">
+                                        {item.section.name}
+                                        {item.section.classroom && ` (${item.section.classroom})`}
+                                    </p>
+                                )}
                             </div>
                             <div className="flex justify-between items-end mt-1">
                                 <span className="font-code font-bold text-lg text-black/80">{item.time.startTime}</span>
@@ -256,7 +261,10 @@ export const ScheduleView = forwardRef<{
                  <div className="w-2 h-2 mt-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: course.color }} />
                 <div>
                   <h4 className="font-bold">{course.name}</h4>
-                  <p className="text-sm text-muted-foreground">{section.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {section.name}
+                    {section.classroom && ` - ${section.classroom}`}
+                  </p>
                   <div className="text-xs mt-2 space-y-1 text-muted-foreground">
                       <p><b>Lecture:</b> {section.lecture.days.join(', ')} {section.lecture.startTime}-{section.lecture.endTime}</p>
                       {section.lab && <p><b>Lab:</b> {section.lab.days.join(', ')} {section.lab.startTime}-{section.lab.endTime}</p>}
@@ -285,5 +293,3 @@ export const ScheduleView = forwardRef<{
 });
 
 ScheduleView.displayName = 'ScheduleView';
-
-    

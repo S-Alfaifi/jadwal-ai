@@ -12,6 +12,7 @@ export interface SectionTime {
 export interface Section {
   id: string;
   name: string;
+  classroom?: string;
   lecture: SectionTime;
   lab?: SectionTime;
   isEnabled: boolean;
