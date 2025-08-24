@@ -267,8 +267,8 @@ export const ScheduleView = forwardRef<{
             {scheduledItems.map(({ course, section }) => (
               <Card key={`${course.id}-${section.id}`} className="flex items-start gap-4 p-4">
                  <div className="w-2 h-2 mt-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: course.color }} />
-                <div>
-                  <h4 className="font-bold">{course.name}</h4>
+                <div className="min-w-0">
+                  <h4 className="font-bold break-words">{course.name}</h4>
                   <p className="text-sm text-muted-foreground">
                     {section.name}
                   </p>
