@@ -156,7 +156,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                 zIndex: 10,
                                 minHeight: '72px'
                             }}>
-                            <div className="flex flex-col" title={fullTitle}>
+                            <div className="flex-grow min-h-0" title={fullTitle}>
                                 <div className="flex flex-wrap items-baseline gap-x-2">
                                     <p className="font-bold text-sm text-black/90 truncate" title={item.course.name}>{item.course.name}</p>
                                      {showClassTypes && (
