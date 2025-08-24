@@ -79,7 +79,7 @@ export function CourseCard({ course, onEdit, onDelete, onToggleCourse, onToggleS
                     </div>
                 </PopoverContent>
              </Popover>
-            <span className="break-words">{course.name}</span>
+            <span className="truncate block">{course.name}</span>
           </CardTitle>
            <CardDescription className="mt-1 flex items-center gap-4 pl-7">
                 <span>{course.sections.length} Section(s)</span>
