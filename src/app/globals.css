@@ -2,20 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: 'Saudi';
-  src: url('../assets/fonts/Saudi-Regular.otf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Saudi';
-  src: url('../assets/fonts/Saudi-Bold.otf') format('opentype');
-  font-weight: 700;
-  font-style: normal;
-}
-
 @layer base {
   :root {
     --background: 207 100% 97%;
