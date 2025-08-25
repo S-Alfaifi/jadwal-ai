@@ -34,7 +34,7 @@ export default function WelcomePage() {
       <main className="flex-grow flex flex-col items-center justify-center container mx-auto p-4 md:p-8">
         <div className="relative px-6 pt-14 lg:px-8">
           <div className="text-center">
-            <h1 className={cn('font-headline text-4xl md:text-6xl font-bold text-primary-foreground tracking-tight', language === 'ar' && 'font-arabic')}>
+            <h1 className={cn('font-headline text-4xl md:text-6xl font-bold text-primary-foreground tracking-tight', language === 'ar' && 'font-arabic md:text-7xl')}>
               {t.welcome.title}
             </h1>
             <p className={cn('text-muted-foreground mt-6 max-w-2xl mx-auto text-lg leading-8', language === 'ar' && 'font-arabic')}>
@@ -49,7 +49,7 @@ export default function WelcomePage() {
         </div>
 
         <div className="text-center max-w-2xl mx-auto mt-24 pt-12 border-t">
-            <h2 className={cn('font-headline text-3xl font-bold text-primary-foreground tracking-tight', language === 'ar' && 'font-arabic')}>
+            <h2 className={cn('font-headline text-3xl font-bold text-primary-foreground tracking-tight', language === 'ar' && 'font-arabic md:text-4xl')}>
                 {t.welcome.aboutTitle}
             </h2>
             <p className={cn('text-muted-foreground mt-4', language === 'ar' && 'font-arabic')}>

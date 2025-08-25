@@ -66,7 +66,9 @@ export function ScheduleControls({
   return (
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 rounded-lg bg-card border" dir="ltr">
       <div>
-        <h2 className={cn('text-2xl font-headline font-bold', language === 'ar' && 'font-arabic text-right')}>{t.title}</h2>
+        <h2 className={cn('text-2xl font-headline font-bold', language === 'ar' && 'font-arabic text-3xl text-right')}>
+          {t.title}
+        </h2>
       </div>
       <div className="flex items-center gap-4 flex-wrap justify-center">
 

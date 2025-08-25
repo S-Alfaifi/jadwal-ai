@@ -179,7 +179,7 @@ export default function EditorPage() {
         
         <main className="flex-grow container mx-auto p-4 md:p-8">
           <div className="text-center mb-12">
-            <h1 className={cn('font-headline text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight', language === 'ar' && 'font-arabic')}>
+            <h1 className={cn('font-headline text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight', language === 'ar' && 'font-arabic md:text-6xl')}>
               {t.editor.title}
             </h1>
             <p className={cn('text-muted-foreground mt-4 max-w-2xl mx-auto', language === 'ar' && 'font-arabic')}>
