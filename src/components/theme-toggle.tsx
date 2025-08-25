@@ -1,8 +1,12 @@
+
 "use client"
 
 import * as React from "react"
-import { Moon, Sun } from "lucide-react"
+import { Check, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useLanguage } from "@/context/language-context"
+import { translations } from "@/lib/translations"
+import { cn } from "@/lib/utils"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,7 +17,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function ThemeToggle() {
-  const { setTheme } = useTheme()
+  const { theme, setTheme } = useTheme()
+  const { language } = useLanguage();
+
+  const menuItems = [
+    { value: "light", label: "Light" },
+    { value: "dark", label: "Dark" },
+    { value: "system", label: "System" },
+  ]
 
   return (
     <DropdownMenu>
@@ -25,15 +36,16 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
-          Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
-          Dark
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
-          System
-        </DropdownMenuItem>
+         {menuItems.map((item) => (
+          <DropdownMenuItem
+            key={item.value}
+            className="flex justify-between"
+            onClick={() => setTheme(item.value)}
+          >
+            <span>{item.label}</span>
+            {theme === item.value && <Check className="h-4 w-4" />}
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   )

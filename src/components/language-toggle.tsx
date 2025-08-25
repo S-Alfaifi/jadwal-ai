@@ -3,7 +3,7 @@
 
 import * as React from "react"
 import Image from "next/image"
-import { Languages } from "lucide-react"
+import { Check, Languages } from "lucide-react"
 import { useLanguage } from "@/context/language-context"
 import saudiFontLogo from '@/images/saudi-font-logo.png';
 
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function LanguageToggle() {
-  const { setLanguage } = useLanguage()
+  const { language, setLanguage } = useLanguage()
 
   return (
     <DropdownMenu>
@@ -27,10 +27,11 @@ export function LanguageToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setLanguage("en")}>
-          English
+        <DropdownMenuItem onClick={() => setLanguage("en")} className="flex justify-between">
+          <span>English</span>
+          {language === 'en' && <Check className="h-4 w-4" />}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setLanguage("ar")} className="justify-end">
+        <DropdownMenuItem onClick={() => setLanguage("ar")} className="flex justify-between">
           <div className="flex items-center gap-2">
             <Image
               src={saudiFontLogo}
@@ -42,6 +43,7 @@ export function LanguageToggle() {
             />
             <span className="font-arabic">العربية</span>
           </div>
+           {language === 'ar' && <Check className="h-4 w-4" />}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
