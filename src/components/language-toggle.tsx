@@ -2,8 +2,10 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { Languages } from "lucide-react"
 import { useLanguage } from "@/context/language-context"
+import saudiFontLogo from '@/images/saudi-font-logo.png';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -28,8 +30,18 @@ export function LanguageToggle() {
         <DropdownMenuItem onClick={() => setLanguage("en")}>
           English
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setLanguage("ar")} className="font-arabic justify-end">
-          العربية
+        <DropdownMenuItem onClick={() => setLanguage("ar")} className="justify-end">
+          <div className="flex items-center gap-2">
+            <Image
+              src={saudiFontLogo}
+              alt="Saudi Font Logo"
+              width={20}
+              height={12}
+              className="rounded-sm"
+              unoptimized
+            />
+            <span className="font-arabic">العربية</span>
+          </div>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
