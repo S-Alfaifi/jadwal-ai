@@ -165,8 +165,8 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                 minHeight: '72px'
                             }}>
                             <div>
-                                <p className={`font-bold text-base text-black/90 truncate ${language === 'ar' ? 'font-arabic' : ''}`} title={item.course.name}>{item.course.name}</p>
-                                <div className={`text-sm text-black/80 flex items-center gap-x-2 mt-0.5 ${language === 'ar' ? 'font-arabic' : ''}`}>
+                                <p className={`font-bold text-sm text-black/90 truncate ${language === 'ar' ? 'font-arabic' : ''}`} title={item.course.name}>{item.course.name}</p>
+                                <div className={`text-xs text-black/80 flex items-center gap-x-2 mt-0.5 ${language === 'ar' ? 'font-arabic' : ''}`}>
                                     {showClassTypes && (
                                         <div className="flex items-center gap-1 font-code flex-shrink-0">
                                             {item.type === 'Lecture' 
@@ -185,8 +185,8 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                 </div>
                             </div>
                             <div className="mt-2 flex justify-between items-end">
-                                <span className="font-code font-bold text-base text-black/80">{item.time.startTime}</span>
-                                <span className="font-code font-bold text-base text-black/80">{item.time.endTime}</span>
+                                <span className="font-code font-bold text-xs text-black/80">{item.time.startTime}</span>
+                                <span className="font-code font-bold text-xs text-black/80">{item.time.endTime}</span>
                             </div>
                         </div>
                     );
