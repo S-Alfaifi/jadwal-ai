@@ -17,6 +17,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useLanguage } from "@/context/language-context";
 import { translations } from "@/lib/translations";
+import { cn } from "@/lib/utils";
 
 type CourseFormData = Omit<Course, 'id' | 'color' | 'sections' | 'isEnabled'> & { id?: string, sections: (Omit<Section, 'id' | 'isEnabled'> & {id?: string})[] };
 
@@ -178,10 +179,10 @@ export default function EditorPage() {
         
         <main className="flex-grow container mx-auto p-4 md:p-8">
           <div className="text-center mb-12">
-            <h1 className={`font-headline text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight ${language === 'ar' ? 'font-arabic' : ''}`}>
+            <h1 className={cn('font-headline text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight', language === 'ar' && 'font-arabic')}>
               {t.editor.title}
             </h1>
-            <p className={`text-muted-foreground mt-4 max-w-2xl mx-auto ${language === 'ar' ? 'font-arabic' : ''}`}>
+            <p className={cn('text-muted-foreground mt-4 max-w-2xl mx-auto', language === 'ar' && 'font-arabic')}>
               {t.editor.subtitle}
             </p>
           </div>
@@ -217,8 +218,8 @@ export default function EditorPage() {
               ) : (
                 <div className="text-center py-16 px-8 bg-card rounded-lg border-2 border-dashed">
                   <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className={`mt-4 text-lg font-medium text-primary-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>{t.editor.noCourses.title}</h3>
-                  <p className={`mt-2 text-sm text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
+                  <h3 className={cn('mt-4 text-lg font-medium text-primary-foreground', language === 'ar' && 'font-arabic')}>{t.editor.noCourses.title}</h3>
+                  <p className={cn('mt-2 text-sm text-muted-foreground', language === 'ar' && 'font-arabic')}>
                     {t.editor.noCourses.description}
                   </p>
                 </div>
@@ -229,7 +230,7 @@ export default function EditorPage() {
 
         <footer className="sticky bottom-0 bg-background/80 backdrop-blur-sm p-4 border-t z-50">
             <div className="max-w-4xl mx-auto">
-              <Button size="lg" className={`w-full ${language === 'ar' ? 'font-arabic' : ''}`} onClick={handleGenerateSchedule} disabled={courses.filter(c => c.isEnabled).length === 0}>
+              <Button size="lg" className={cn('w-full', language === 'ar' && 'font-arabic')} onClick={handleGenerateSchedule} disabled={courses.filter(c => c.isEnabled).length === 0}>
                 {t.editor.generateSchedule}
               </Button>
             </div>
@@ -252,7 +253,7 @@ export default function EditorPage() {
         </Dialog>
       </div>
       <footer className="text-center py-4">
-        <p className={`text-xs text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
+        <p className={cn('text-xs text-muted-foreground', language === 'ar' && 'font-arabic')}>
            {t.footer.rights}
         </p>
       </footer>

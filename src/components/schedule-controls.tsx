@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/context/language-context";
 import { translations } from "@/lib/translations";
+import { cn } from "@/lib/utils";
 
 interface ScheduleControlsProps {
   current: number;
@@ -50,7 +51,7 @@ export function ScheduleControls({
                     checked={checked}
                     onCheckedChange={onCheckedChange}
                 />
-                <Label htmlFor={id} className={`flex items-center gap-2 text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
+                <Label htmlFor={id} className={cn('flex items-center gap-2 text-muted-foreground', language === 'ar' && 'font-arabic')}>
                    <Icon className="h-4 w-4" />
                     <span>{label}</span>
                 </Label>
@@ -65,7 +66,7 @@ export function ScheduleControls({
   return (
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 rounded-lg bg-card border" dir="ltr">
       <div>
-        <h2 className={`text-2xl font-headline font-bold ${language === 'ar' ? 'font-arabic text-right' : ''}`}>{t.title}</h2>
+        <h2 className={cn('text-2xl font-headline font-bold', language === 'ar' && 'font-arabic text-right')}>{t.title}</h2>
       </div>
       <div className="flex items-center gap-4 flex-wrap justify-center">
 
@@ -120,7 +121,7 @@ export function ScheduleControls({
                 </TooltipContent>
             </Tooltip>
              {total > 0 && (
-                <p className={`text-sm text-muted-foreground tabular-nums ${language === 'ar' ? 'font-arabic' : ''}`}>
+                <p className={cn('text-sm text-muted-foreground tabular-nums', language === 'ar' && 'font-arabic')}>
                     {t.displaying} {current} {t.of} {total}
                 </p>
             )}
