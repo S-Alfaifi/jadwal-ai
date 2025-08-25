@@ -156,7 +156,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                     return (
                         <div
                             key={`${item.course.id}-${item.section.id}-${item.day}-${item.type}-${eventIndex}`}
-                            className="rounded-lg p-2 flex flex-col justify-center relative text-black m-1"
+                            className="rounded-lg p-2 flex flex-col relative text-black m-1"
                             style={{
                                 gridRow: `${rowStart} / span 1`,
                                 gridColumn: `${startCol} / ${endCol}`,
@@ -164,10 +164,9 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                 zIndex: 10,
                                 minHeight: '72px'
                             }}>
-                            <div className="flex-grow min-h-0" title={fullTitle}>
+                            <div title={fullTitle}>
                                 <p className={`font-bold text-base text-black/90 truncate ${language === 'ar' ? 'font-arabic' : ''}`} title={item.course.name}>{item.course.name}</p>
-                                
-                                <div className={`text-xs text-black/80 flex items-center gap-x-2 ${language === 'ar' ? 'font-arabic' : ''}`}>
+                                <div className={`text-sm text-black/80 flex items-center gap-x-2 ${language === 'ar' ? 'font-arabic' : ''}`}>
                                     {showClassTypes && (
                                         <div className="flex items-center gap-1 font-code flex-shrink-0">
                                             {item.type === 'Lecture' 
@@ -185,7 +184,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                     )}
                                 </div>
                             </div>
-                            <div className="flex justify-between items-end mt-1 flex-shrink-0">
+                            <div className="flex justify-between items-end mt-auto">
                                 <span className="font-code font-bold text-lg text-black/80">{item.time.startTime}</span>
                                 <span className="font-code font-bold text-lg text-black/80">{item.time.endTime}</span>
                             </div>
