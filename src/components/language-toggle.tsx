@@ -35,8 +35,8 @@ export function LanguageToggle() {
             <Image
               src={saudiFontLogo}
               alt="Saudi Font Logo"
-              width={40}
-              height={32}
+              width={50}
+              height={42}
               className="rounded-sm"
               unoptimized
             />
