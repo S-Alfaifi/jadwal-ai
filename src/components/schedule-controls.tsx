@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/tooltip"
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useLanguage } from "@/context/language-context";
+import { translations } from "@/lib/translations";
 
 interface ScheduleControlsProps {
   current: number;
@@ -36,13 +38,16 @@ export function ScheduleControls({
   showClassroom,
   onToggleShowClassroom,
 }: ScheduleControlsProps) {
+  const { language } = useLanguage();
+  const t = translations[language].scheduleControls;
+
   return (
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 rounded-lg bg-card border">
       <div>
-        <h2 className="text-2xl font-headline font-bold">Generated Schedule</h2>
+        <h2 className={`text-2xl font-headline font-bold ${language === 'ar' ? 'font-arabic' : ''}`}>{t.title}</h2>
         {total > 0 && (
-          <p className="text-muted-foreground">
-            Displaying alternative {current} of {total}
+          <p className={`text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
+            {t.displaying} {current} {t.of} {total}
           </p>
         )}
       </div>
@@ -56,14 +61,14 @@ export function ScheduleControls({
                         checked={showClassroom}
                         onCheckedChange={onToggleShowClassroom}
                     />
-                    <Label htmlFor="show-classroom" className="flex items-center gap-2 text-muted-foreground">
+                    <Label htmlFor="show-classroom" className={`flex items-center gap-2 text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
                        <MapPin className="h-4 w-4" />
-                        <span>Classroom</span>
+                        <span>{t.toggles.classroom}</span>
                     </Label>
                 </div>
             </TooltipTrigger>
             <TooltipContent>
-                <p>Toggle the visibility of classroom numbers.</p>
+                <p className={language === 'ar' ? 'font-arabic' : ''}>{t.tooltips.classroom}</p>
             </TooltipContent>
         </Tooltip>
 
@@ -75,14 +80,14 @@ export function ScheduleControls({
                         checked={showClassTypes}
                         onCheckedChange={onToggleShowClassTypes}
                     />
-                    <Label htmlFor="show-class-types" className="flex items-center gap-2 text-muted-foreground">
+                    <Label htmlFor="show-class-types" className={`flex items-center gap-2 text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
                         <BookText className="h-4 w-4" />
-                        <span>Class Types</span>
+                        <span>{t.toggles.classTypes}</span>
                     </Label>
                 </div>
             </TooltipTrigger>
             <TooltipContent>
-                <p>Toggle the visibility of class types (Lecture/Lab).</p>
+                <p className={language === 'ar' ? 'font-arabic' : ''}>{t.tooltips.classTypes}</p>
             </TooltipContent>
         </Tooltip>
 
@@ -94,14 +99,14 @@ export function ScheduleControls({
                         checked={showSectionNames}
                         onCheckedChange={onToggleShowSectionNames}
                     />
-                    <Label htmlFor="show-section-names" className="flex items-center gap-2 text-muted-foreground">
+                    <Label htmlFor="show-section-names" className={`flex items-center gap-2 text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
                         {showSectionNames ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                        <span>Section Names</span>
+                        <span>{t.toggles.sectionNames}</span>
                     </Label>
                 </div>
             </TooltipTrigger>
             <TooltipContent>
-                <p>Toggle the visibility of section names in the schedule.</p>
+                <p className={language === 'ar' ? 'font-arabic' : ''}>{t.tooltips.sectionNames}</p>
             </TooltipContent>
         </Tooltip>
 
@@ -113,7 +118,7 @@ export function ScheduleControls({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Save Schedule as Image</p>
+            <p className={language === 'ar' ? 'font-arabic' : ''}>{t.tooltips.saveImage}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -126,7 +131,7 @@ export function ScheduleControls({
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                    <p>Previous Schedule</p>
+                    <p className={language === 'ar' ? 'font-arabic' : ''}>{t.tooltips.previous}</p>
                 </TooltipContent>
             </Tooltip>
             <Tooltip>
@@ -136,7 +141,7 @@ export function ScheduleControls({
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                    <p>Next Schedule</p>
+                    <p className={language === 'ar' ? 'font-arabic' : ''}>{t.tooltips.next}</p>
                 </TooltipContent>
             </Tooltip>
           </div>

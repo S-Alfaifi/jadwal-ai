@@ -6,6 +6,8 @@ import type { Course, Schedule, Section, Day, SectionTime } from '@/lib/types';
 import { ALL_DAYS } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookText, FlaskConical } from 'lucide-react';
+import { useLanguage } from '@/context/language-context';
+import { translations } from '@/lib/translations';
 
 const timeToMinutes = (time: string): number => {
   const [h, m] = time.split(':').map(Number);
@@ -24,6 +26,12 @@ interface PositionedEvent {
 }
 
 const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames, showClassTypes, showClassroom }: { scheduledItems: { course: Course; section: Section; }[], startHour: number, endHour: number, showSectionNames: boolean, showClassTypes: boolean, showClassroom: boolean }) => {
+    const { language } = useLanguage();
+    const t = translations[language];
+
+    const getDayName = (day: Day) => {
+        return t.addCourseForm.days[day];
+    }
     // Visual grid is 30-min intervals
     const visualTimeSlots = Array.from({ length: (endHour - startHour) * 2 }, (_, i) => {
         const hour = startHour + Math.floor(i / 2);
@@ -98,7 +106,7 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
         <div className="grid grid-cols-[auto_1fr] bg-background font-sans">
             {/* Top-left corner */}
             <div className="sticky left-0 top-0 z-30 flex items-center justify-center bg-background border-r border-b">
-                <div className="text-xs font-medium text-muted-foreground p-2">Time</div>
+                <div className={`text-xs font-medium text-muted-foreground p-2 ${language === 'ar' ? 'font-arabic' : ''}`}>{t.scheduleView.time}</div>
             </div>
             
              {/* Time Headers (Visual Grid) */}
@@ -112,8 +120,8 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
             
             <div className="sticky left-0 z-20 flex flex-col">
                 {ALL_DAYS.map((day) => (
-                    <div key={day} className="flex-grow flex items-center justify-center p-2 font-bold text-primary-foreground bg-background border-b border-r" style={{minHeight: `${dayTrackCounts[day] * 80}px`}}>
-                       {day}
+                    <div key={day} className={`flex-grow flex items-center justify-center p-2 font-bold text-primary-foreground bg-background border-b border-r ${language === 'ar' ? 'font-arabic' : ''}`} style={{minHeight: `${dayTrackCounts[day] * 80}px`}}>
+                       {getDayName(day)}
                     </div>
                 ))}
             </div>
@@ -157,16 +165,16 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                 minHeight: '72px'
                             }}>
                             <div className="flex-grow min-h-0" title={fullTitle}>
-                                <p className="font-bold text-sm text-black/90 truncate" title={item.course.name}>{item.course.name}</p>
+                                <p className={`font-bold text-sm text-black/90 truncate ${language === 'ar' ? 'font-arabic' : ''}`} title={item.course.name}>{item.course.name}</p>
                                 
-                                <div className="text-xs text-black/80 mt-0.5 flex items-center gap-x-2">
+                                <div className={`text-xs text-black/80 mt-0.5 flex items-center gap-x-2 ${language === 'ar' ? 'font-arabic' : ''}`}>
                                     {showClassTypes && (
                                         <div className="flex items-center gap-1 font-code flex-shrink-0">
                                             {item.type === 'Lecture' 
                                                 ? <BookText className="h-3 w-3" /> 
                                                 : <FlaskConical className="h-3 w-3" />
                                             }
-                                            <span>{item.type}</span>
+                                            <span>{t.courseCard.classTypes[item.type]}</span>
                                         </div>
                                     )}
                                     {showSectionNames && (
@@ -203,6 +211,8 @@ export const ScheduleView = forwardRef<{
   }, ScheduleViewProps>(({ courses, schedule, showSectionNames, showClassTypes, showClassroom }, ref) => {
   const scheduleGridRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
+  const { language } = useLanguage();
+  const t = translations[language];
 
   useImperativeHandle(ref, () => ({
     scheduleGrid: scheduleGridRef.current,
@@ -255,21 +265,21 @@ export const ScheduleView = forwardRef<{
     <div className="mt-8" ref={summaryRef}>
       <Card>
           <CardHeader>
-            <CardTitle>Course Summary</CardTitle>
-            <CardDescription>Details for the currently displayed schedule.</CardDescription>
+            <CardTitle className={language === 'ar' ? 'font-arabic' : ''}>{t.scheduleView.summary.title}</CardTitle>
+            <CardDescription className={language === 'ar' ? 'font-arabic' : ''}>{t.scheduleView.summary.description}</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {scheduledItems.map(({ course, section }) => (
               <Card key={`${course.id}-${section.id}`} className="flex items-start gap-4 p-4">
                  <div className="w-2 h-2 mt-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: course.color }} />
                 <div className="min-w-0">
-                  <h4 className="font-bold break-words">{course.name}</h4>
-                  <p className="text-sm text-muted-foreground">
+                  <h4 className={`font-bold break-words ${language === 'ar' ? 'font-arabic' : ''}`}>{course.name}</h4>
+                  <p className={`text-sm text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
                     {section.name}
                   </p>
-                  <div className="text-xs mt-2 space-y-1 text-muted-foreground">
-                      <p><b>Lecture:</b> {section.lecture.days.join(', ')} {section.lecture.startTime}-{section.lecture.endTime} {section.lecture.classroom && `(${section.lecture.classroom})`}</p>
-                      {section.lab && <p><b>Lab:</b> {section.lab.days.join(', ')} {section.lab.startTime}-{section.lab.endTime} {section.lab.classroom && `(${section.lab.classroom})`}</p>}
+                  <div className={`text-xs mt-2 space-y-1 text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
+                      <p><b>{t.scheduleView.summary.lecture}:</b> {section.lecture.days.map(d => t.addCourseForm.days[d]).join(', ')} {section.lecture.startTime}-{section.lecture.endTime} {section.lecture.classroom && `(${section.lecture.classroom})`}</p>
+                      {section.lab && <p><b>{t.scheduleView.summary.lab}:</b> {section.lab.days.map(d => t.addCourseForm.days[d]).join(', ')} {section.lab.startTime}-{section.lab.endTime} {section.lab.classroom && `(${section.lab.classroom})`}</p>}
                   </div>
                 </div>
               </Card>

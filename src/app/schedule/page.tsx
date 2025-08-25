@@ -5,15 +5,18 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation';
 import { toPng } from 'html-to-image';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, ArrowLeft, Download, Sparkles } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { ScheduleView } from '@/components/schedule-view';
 import { ScheduleControls } from '@/components/schedule-controls';
 import { Logo } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { Course, Schedule, GenerationResult, Conflict } from '@/lib/types';
+import type { Course, Schedule, GenerationResult } from '@/lib/types';
 import { generateSchedules } from '@/lib/scheduler';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from '@/components/theme-toggle';
+import { LanguageToggle } from '@/components/language-toggle';
+import { useLanguage } from '@/context/language-context';
+import { translations } from '@/lib/translations';
 
 export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -30,6 +33,14 @@ export default function SchedulePage() {
   const scheduleRef = useRef<{
     scheduleGrid: HTMLDivElement | null;
   }>(null);
+
+  const { language } = useLanguage();
+  const t = translations[language];
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+  }, [language]);
 
   const runScheduler = useCallback(() => {
     const activeCourses = courses
@@ -146,7 +157,7 @@ export default function SchedulePage() {
       return (
         <div className="flex items-center justify-center min-h-[60vh] flex-col">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="mt-4 text-lg text-muted-foreground">Generating optimal schedules...</p>
+          <p className={`mt-4 text-lg text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>{t.schedule.loading}</p>
         </div>
       );
     }
@@ -170,19 +181,19 @@ export default function SchedulePage() {
            {(excludedCoursesForThisSchedule.length > 0 || (conflictForThisSchedule && includedCoursesInSchedule.length === courses.filter(c => c.isEnabled).length)) && (
             <Alert variant="destructive" className="mt-4 bg-destructive/10">
               <AlertTriangle className="h-4 w-4 text-destructive-foreground/90" />
-              <AlertTitle className="font-bold text-foreground">
-                { excludedCoursesForThisSchedule.length > 0 ? "Partial Schedule Generated" : "Potential Conflict Detected"}
+              <AlertTitle className={`font-bold text-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
+                { excludedCoursesForThisSchedule.length > 0 ? t.schedule.partial.title : t.schedule.conflict.title}
               </AlertTitle>
-              <AlertDescription className="text-foreground/90 space-y-1">
+              <AlertDescription className={`text-foreground/90 space-y-1 ${language === 'ar' ? 'font-arabic' : ''}`}>
                  {conflictForThisSchedule ? (
                     <p>
-                      A full schedule could not be created because <span className="font-semibold">{conflictForThisSchedule.courses.map(c => c.name).join(' and ')}</span> have a <span className="font-semibold">{conflictForThisSchedule.type} conflict</span>.
+                      {t.schedule.conflict.description.cannotCreate} <span className="font-semibold">{conflictForThisSchedule.courses.map(c => c.name).join(` ${t.schedule.conflict.description.and} `)}</span> {t.schedule.conflict.description.haveA} <span className="font-semibold">{t.schedule.conflict.types[conflictForThisSchedule.type]}</span>.
                     </p>
                  ) : (
-                    <p>A full schedule could not be generated with all selected courses.</p>
+                    <p>{t.schedule.partial.cannotGenerateFull}</p>
                  )}
                  {excludedCoursesForThisSchedule.length > 0 && (
-                    <p>This schedule was created by excluding: <strong className="font-semibold">{excludedCoursesForThisSchedule.map(c => c.name).join(', ')}</strong>.</p>
+                    <p>{t.schedule.partial.excluded} <strong className="font-semibold">{excludedCoursesForThisSchedule.map(c => c.name).join(', ')}</strong>.</p>
                  )}
               </AlertDescription>
             </Alert>
@@ -204,16 +215,16 @@ export default function SchedulePage() {
     return (
       <div className="flex flex-col items-center justify-center text-center py-16 px-8 bg-card rounded-lg border-2 border-dashed min-h-[60vh]">
         <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
-        <h3 className="mt-4 text-xl font-bold text-primary-foreground">No Conflict-Free Schedule Found</h3>
+        <h3 className={`mt-4 text-xl font-bold text-primary-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>{t.schedule.noSchedule.title}</h3>
         {conflicts.length > 0 ? (
-           <p className="mt-2 text-base text-muted-foreground">{conflicts[0].message}</p>
+           <p className={`mt-2 text-base text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>{conflicts[0].message}</p>
         ) : (
-           <p className="mt-2 text-base text-muted-foreground">
-             We couldn't generate any possible schedule with the courses and sections you enabled.
+           <p className={`mt-2 text-base text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
+             {t.schedule.noSchedule.description}
            </p>
         )}
-        <Button onClick={() => router.push('/editor')} className="mt-4" variant="outline">
-          Go Back and Edit Courses
+        <Button onClick={() => router.push('/editor')} className={`mt-4 ${language === 'ar' ? 'font-arabic' : ''}`} variant="outline">
+          {t.schedule.noSchedule.backButton}
         </Button>
       </div>
     );
@@ -225,17 +236,18 @@ export default function SchedulePage() {
         <div className="container mx-auto flex justify-between items-center">
             <Logo />
             <div className="flex items-center gap-2 md:gap-4">
+              <LanguageToggle />
               <ThemeToggle />
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" onClick={() => router.push('/editor')}>
+                    <Button variant="outline" onClick={() => router.push('/editor')} className={language === 'ar' ? 'font-arabic' : ''}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Edit
+                        {t.schedule.backToEdit}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Return to the course selection page</p>
+                    <p className={language === 'ar' ? 'font-arabic' : ''}>{t.schedule.backToEditTooltip}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -250,8 +262,8 @@ export default function SchedulePage() {
       </main>
 
       <footer className="text-center py-4">
-        <p className="text-xs text-muted-foreground">
-          © 2025 Sulaiman Alfaifi — All rights reserved
+        <p className={`text-xs text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
+           {t.footer.rights}
         </p>
       </footer>
     </div>

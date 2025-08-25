@@ -44,3 +44,5 @@ export interface GenerationResult {
     conflicts: Conflict[];
     excludedCourses: Course[];
 }
+
+export type Language = 'en' | 'ar';

@@ -14,6 +14,9 @@ import type { Course, Section } from "@/lib/types";
 import { generatePastelColor } from "@/lib/colors";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
+import { useLanguage } from "@/context/language-context";
+import { translations } from "@/lib/translations";
 
 type CourseFormData = Omit<Course, 'id' | 'color' | 'sections' | 'isEnabled'> & { id?: string, sections: (Omit<Section, 'id' | 'isEnabled'> & {id?: string})[] };
 
@@ -24,7 +27,14 @@ export default function EditorPage() {
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { language } = useLanguage();
+  const t = translations[language];
 
+  useEffect(() => {
+    document.documentElement.lang = language;
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+  }, [language]);
+  
   useEffect(() => {
     setIsMounted(true);
     const savedCourses = localStorage.getItem("courses");
@@ -61,8 +71,8 @@ export default function EditorPage() {
   const handleDeleteCourse = (courseId: string) => {
     setCourses(courses.filter((c) => c.id !== courseId));
     toast({
-      title: "Course Deleted",
-      description: "The course has been removed from your list.",
+      title: t.toasts.courseDeleted.title,
+      description: t.toasts.courseDeleted.description,
     });
   };
 
@@ -84,8 +94,8 @@ export default function EditorPage() {
         courses.map((c) => (c.id === editingCourse.id ? { ...c, ...data, sections: updatedSections } : c))
       );
       toast({
-        title: "Course Updated",
-        description: `"${data.name}" has been successfully updated.`,
+        title: t.toasts.courseUpdated.title,
+        description: `"${data.name}" ${t.toasts.courseUpdated.description}`,
       });
     } else {
       const newCourse: Course = { 
@@ -97,8 +107,8 @@ export default function EditorPage() {
       };
       setCourses([...courses, newCourse]);
       toast({
-        title: "Course Added",
-        description: `"${data.name}" has been added to your list.`,
+        title: t.toasts.courseAdded.title,
+        description: `"${data.name}" ${t.toasts.courseAdded.description}`,
       });
     }
     setIsModalOpen(false);
@@ -139,8 +149,8 @@ export default function EditorPage() {
     const activeCourses = courses.filter(c => c.isEnabled && c.sections.some(s => s.isEnabled));
     if (activeCourses.length === 0) {
       toast({
-        title: "No Active Courses",
-        description: "Please enable at least one course and section to generate a schedule.",
+        title: t.toasts.noActiveCourses.title,
+        description: t.toasts.noActiveCourses.description,
         variant: "destructive",
       });
       return;
@@ -158,17 +168,18 @@ export default function EditorPage() {
         <header className="py-6 px-4 md:px-8 border-b flex justify-between items-center bg-background/80 backdrop-blur-sm sticky top-0 z-50">
           <Logo />
           <div className="flex items-center gap-2">
+            <LanguageToggle />
             <ThemeToggle />
           </div>
         </header>
         
         <main className="flex-grow container mx-auto p-4 md:p-8">
           <div className="text-center mb-12">
-            <h1 className="font-headline text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight">
-              Create Your Schedule
+            <h1 className={`font-headline text-4xl md:text-5xl font-bold text-primary-foreground tracking-tight ${language === 'ar' ? 'font-arabic' : ''}`}>
+              {t.editor.title}
             </h1>
-            <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
-              Add your courses below. Toggle courses or specific sections to include them in the final schedule.
+            <p className={`text-muted-foreground mt-4 max-w-2xl mx-auto ${language === 'ar' ? 'font-arabic' : ''}`}>
+              {t.editor.subtitle}
             </p>
           </div>
 
@@ -176,13 +187,13 @@ export default function EditorPage() {
             <div className="flex justify-center md:justify-end items-center gap-4 mb-8">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={handleAddCourseClick}>
+                  <Button onClick={handleAddCourseClick} className={language === 'ar' ? 'font-arabic' : ''}>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Course
+                    {t.editor.addCourse}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Manually add a new course</p>
+                <TooltipContent className={language === 'ar' ? 'font-arabic' : ''}>
+                  <p>{t.editor.addCourseTooltip}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -203,9 +214,9 @@ export default function EditorPage() {
               ) : (
                 <div className="text-center py-16 px-8 bg-card rounded-lg border-2 border-dashed">
                   <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-medium text-primary-foreground">No courses added yet</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Click on 'Add Course' to start building your schedule.
+                  <h3 className={`mt-4 text-lg font-medium text-primary-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>{t.editor.noCourses.title}</h3>
+                  <p className={`mt-2 text-sm text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
+                    {t.editor.noCourses.description}
                   </p>
                 </div>
               )}
@@ -215,8 +226,8 @@ export default function EditorPage() {
 
         <footer className="sticky bottom-0 bg-background/80 backdrop-blur-sm p-4 border-t z-50">
             <div className="max-w-4xl mx-auto">
-              <Button size="lg" className="w-full" onClick={handleGenerateSchedule} disabled={courses.filter(c => c.isEnabled).length === 0}>
-                Generate Schedule
+              <Button size="lg" className={`w-full ${language === 'ar' ? 'font-arabic' : ''}`} onClick={handleGenerateSchedule} disabled={courses.filter(c => c.isEnabled).length === 0}>
+                {t.editor.generateSchedule}
               </Button>
             </div>
         </footer>
@@ -224,9 +235,9 @@ export default function EditorPage() {
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent className="sm:max-w-[700px]">
             <DialogHeader>
-              <DialogTitle>{editingCourse ? "Edit Course" : "Add a New Course"}</DialogTitle>
-              <DialogDescription>
-                Fill in the details for the course, adding one or more sections with their lecture and lab times.
+              <DialogTitle className={language === 'ar' ? 'font-arabic' : ''}>{editingCourse ? t.addCourseForm.editTitle : t.addCourseForm.addTitle}</DialogTitle>
+              <DialogDescription className={language === 'ar' ? 'font-arabic' : ''}>
+                {t.addCourseForm.description}
               </DialogDescription>
             </DialogHeader>
             <AddCourseForm
@@ -238,8 +249,8 @@ export default function EditorPage() {
         </Dialog>
       </div>
       <footer className="text-center py-4">
-        <p className="text-xs text-muted-foreground">
-          © 2025 Sulaiman Alfaifi — All rights reserved
+        <p className={`text-xs text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
+           {t.footer.rights}
         </p>
       </footer>
     </TooltipProvider>
