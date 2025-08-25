@@ -22,7 +22,7 @@ export default function SchedulePage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null);
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
-  const [showSectionNames, setShowSectionNames] = useState(true);
+  const [showSectionNames, setShowSectionNames] = useState(false);
   const [showClassTypes, setShowClassTypes] = useState(true);
   const [showClassroom, setShowClassroom] = useState(true);
   
