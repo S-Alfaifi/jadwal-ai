@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -27,7 +28,7 @@ export function LanguageToggle() {
         <DropdownMenuItem onClick={() => setLanguage("en")}>
           English
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setLanguage("ar")}>
+        <DropdownMenuItem onClick={() => setLanguage("ar")} className="font-arabic justify-end">
           العربية
         </DropdownMenuItem>
       </DropdownMenuContent>

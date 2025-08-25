@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useLanguage } from "@/context/language-context";
 import { translations } from "@/lib/translations";
+import Image from "next/image";
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -37,10 +38,21 @@ export default function WelcomePage() {
             <p className={`text-muted-foreground mt-6 max-w-2xl mx-auto text-lg leading-8 ${language === 'ar' ? 'font-arabic' : ''}`}>
               {t.welcome.subtitle}
             </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
+            <div className="mt-10 flex flex-col items-center justify-center gap-x-6">
                 <Button size="lg" onClick={() => router.push('/editor')} className={language === 'ar' ? 'font-arabic' : ''}>
                     {t.welcome.cta} {language === 'en' && <ArrowRight className="ml-2 h-4 w-4" />}
                 </Button>
+                 {language === 'ar' && (
+                  <div className="mt-6">
+                      <Image
+                        src="/images/saudi-font-logo.png"
+                        alt="Saudi Font Logo"
+                        width={200}
+                        height={120}
+                        className="rounded-lg"
+                      />
+                  </div>
+                )}
             </div>
           </div>
         </div>
