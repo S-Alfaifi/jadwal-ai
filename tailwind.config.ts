@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -18,7 +19,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['var(--font-pt-sans)', 'var(--font-saudi)'],
-        headline: ['var(--font-pt-sans)', 'var(--font-saudi)'],
+        headline: ['var(--font-saudi)', 'var(--font-pt-sans)'],
         code: ['monospace'],
         arabic: ['var(--font-saudi)', 'var(--font-pt-sans)'],
       },
