@@ -5,12 +5,35 @@ import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
 import { LanguageProvider } from '@/context/language-context';
-import { ptSans, saudiFont } from '@/lib/fonts';
+import { PT_Sans } from 'next/font/google';
+import localFont from 'next/font/local';
 
 export const metadata: Metadata = {
   title: 'Jadwal.Ai',
   description: 'An intelligent, user-friendly application that helps university students generate conflict-free class schedules.',
 };
+
+const ptSans = PT_Sans({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-pt-sans',
+});
+
+const saudiFont = localFont({
+  src: [
+    {
+      path: '../assets/fonts/Saudi-Regular.woff2',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../assets/fonts/Saudi-Bold.woff2',
+      weight: '700',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-saudi',
+});
 
 export default function RootLayout({
   children,
