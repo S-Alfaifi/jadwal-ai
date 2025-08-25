@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/context/language-context";
 import { translations } from "@/lib/translations";
+import { cn } from "@/lib/utils";
 
 interface ScheduleControlsProps {
   current: number;
@@ -41,6 +42,27 @@ export function ScheduleControls({
   const { language } = useLanguage();
   const t = translations[language].scheduleControls;
 
+  const ToggleItem = ({ id, checked, onCheckedChange, icon: Icon, label, tooltip }: { id: string, checked: boolean, onCheckedChange: () => void, icon: React.ElementType, label: string, tooltip: string }) => (
+    <Tooltip>
+        <TooltipTrigger asChild>
+            <div className={cn("flex items-center", language === 'ar' ? "space-x-reverse space-x-2" : "space-x-2")}>
+                <Switch
+                    id={id}
+                    checked={checked}
+                    onCheckedChange={onCheckedChange}
+                />
+                <Label htmlFor={id} className={`flex items-center gap-2 text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
+                   <Icon className="h-4 w-4" />
+                    <span>{label}</span>
+                </Label>
+            </div>
+        </TooltipTrigger>
+        <TooltipContent>
+            <p className={language === 'ar' ? 'font-arabic' : ''}>{tooltip}</p>
+        </TooltipContent>
+    </Tooltip>
+  );
+
   return (
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 rounded-lg bg-card border">
       <div>
@@ -53,63 +75,32 @@ export function ScheduleControls({
       </div>
       <div className="flex items-center gap-4 flex-wrap justify-center">
 
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <div className="flex items-center space-x-2">
-                    <Switch
-                        id="show-classroom"
-                        checked={showClassroom}
-                        onCheckedChange={onToggleShowClassroom}
-                    />
-                    <Label htmlFor="show-classroom" className={`flex items-center gap-2 text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
-                       <MapPin className="h-4 w-4" />
-                        <span>{t.toggles.classroom}</span>
-                    </Label>
-                </div>
-            </TooltipTrigger>
-            <TooltipContent>
-                <p className={language === 'ar' ? 'font-arabic' : ''}>{t.tooltips.classroom}</p>
-            </TooltipContent>
-        </Tooltip>
+        <ToggleItem
+          id="show-classroom"
+          checked={showClassroom}
+          onCheckedChange={onToggleShowClassroom}
+          icon={MapPin}
+          label={t.toggles.classroom}
+          tooltip={t.tooltips.classroom}
+        />
+        
+        <ToggleItem
+          id="show-class-types"
+          checked={showClassTypes}
+          onCheckedChange={onToggleShowClassTypes}
+          icon={BookText}
+          label={t.toggles.classTypes}
+          tooltip={t.tooltips.classTypes}
+        />
 
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <div className="flex items-center space-x-2">
-                    <Switch
-                        id="show-class-types"
-                        checked={showClassTypes}
-                        onCheckedChange={onToggleShowClassTypes}
-                    />
-                    <Label htmlFor="show-class-types" className={`flex items-center gap-2 text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
-                        <BookText className="h-4 w-4" />
-                        <span>{t.toggles.classTypes}</span>
-                    </Label>
-                </div>
-            </TooltipTrigger>
-            <TooltipContent>
-                <p className={language === 'ar' ? 'font-arabic' : ''}>{t.tooltips.classTypes}</p>
-            </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <div className="flex items-center space-x-2">
-                    <Switch
-                        id="show-section-names"
-                        checked={showSectionNames}
-                        onCheckedChange={onToggleShowSectionNames}
-                    />
-                    <Label htmlFor="show-section-names" className={`flex items-center gap-2 text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
-                        {showSectionNames ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                        <span>{t.toggles.sectionNames}</span>
-                    </Label>
-                </div>
-            </TooltipTrigger>
-            <TooltipContent>
-                <p className={language === 'ar' ? 'font-arabic' : ''}>{t.tooltips.sectionNames}</p>
-            </TooltipContent>
-        </Tooltip>
-
+        <ToggleItem
+          id="show-section-names"
+          checked={showSectionNames}
+          onCheckedChange={onToggleShowSectionNames}
+          icon={showSectionNames ? Eye : EyeOff}
+          label={t.toggles.sectionNames}
+          tooltip={t.tooltips.sectionNames}
+        />
 
         <Tooltip>
           <TooltipTrigger asChild>
