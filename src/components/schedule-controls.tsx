@@ -10,7 +10,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/context/language-context";
 import { translations } from "@/lib/translations";
-import { cn } from "@/lib/utils";
 
 interface ScheduleControlsProps {
   current: number;
@@ -45,7 +44,7 @@ export function ScheduleControls({
   const ToggleItem = ({ id, checked, onCheckedChange, icon: Icon, label, tooltip }: { id: string, checked: boolean, onCheckedChange: () => void, icon: React.ElementType, label: string, tooltip: string }) => (
     <Tooltip>
         <TooltipTrigger asChild>
-            <div className={cn("flex items-center", language === 'ar' ? "space-x-reverse space-x-2" : "space-x-2")}>
+            <div className="flex items-center space-x-2">
                 <Switch
                     id={id}
                     checked={checked}
@@ -64,11 +63,11 @@ export function ScheduleControls({
   );
 
   return (
-    <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 rounded-lg bg-card border">
+    <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 rounded-lg bg-card border" dir="ltr">
       <div>
-        <h2 className={`text-2xl font-headline font-bold ${language === 'ar' ? 'font-arabic' : ''}`}>{t.title}</h2>
+        <h2 className={`text-2xl font-headline font-bold ${language === 'ar' ? 'font-arabic text-right' : ''}`}>{t.title}</h2>
         {total > 0 && (
-          <p className={`text-muted-foreground ${language === 'ar' ? 'font-arabic' : ''}`}>
+          <p className={`text-muted-foreground ${language === 'ar' ? 'font-arabic text-right' : ''}`}>
             {t.displaying} {current} {t.of} {total}
           </p>
         )}

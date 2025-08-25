@@ -233,7 +233,7 @@ export default function SchedulePage() {
   return (
     <div className="flex flex-col min-h-screen">
        <header className="py-6 px-4 md:px-8 border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto flex items-center">
+        <div className="container mx-auto flex items-center" dir="ltr">
             <Logo />
             <div className="flex-grow" />
             <div className="flex items-center gap-2 md:gap-4">

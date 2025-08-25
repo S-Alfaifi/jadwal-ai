@@ -166,7 +166,7 @@ export default function EditorPage() {
     <TooltipProvider>
       <div className="flex flex-col min-h-screen">
         <header className="py-6 px-4 md:px-8 border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-           <div className="container mx-auto flex items-center">
+           <div className="container mx-auto flex items-center" dir="ltr">
             <Logo />
             <div className="flex-grow" />
             <div className="flex items-center gap-2">
@@ -187,7 +187,7 @@ export default function EditorPage() {
           </div>
 
           <div className="max-w-4xl mx-auto">
-            <div className="flex justify-end items-center gap-4 mb-8">
+            <div className="flex justify-end items-center gap-4 mb-8" dir="ltr">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button onClick={handleAddCourseClick} className={language === 'ar' ? 'font-arabic' : ''}>
