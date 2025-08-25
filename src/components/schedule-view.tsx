@@ -170,8 +170,8 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                     {showClassTypes && (
                                         <div className="flex items-center gap-1 font-code flex-shrink-0">
                                             {item.type === 'Lecture' 
-                                                ? <BookText className="h-3 w-3" /> 
-                                                : <FlaskConical className="h-3 w-3" />
+                                                ? <BookText className="h-4 w-4" /> 
+                                                : <FlaskConical className="h-4 w-4" />
                                             }
                                             <span>{t.courseCard.classTypes[item.type]}</span>
                                         </div>
@@ -180,11 +180,12 @@ const HorizontalLayout = ({ scheduledItems, startHour, endHour, showSectionNames
                                         <span className="truncate">{item.section.name}</span>
                                     )}
                                     {showClassroom && item.time.classroom && (
-                                        <span className="font-bold truncate">({item.time.classroom})</span>
+                                        <span className="font-bold truncate text-sm">({item.time.classroom})</span>
                                     )}
                                 </div>
                             </div>
-                            <div className="mt-2 flex justify-between items-end">
+                            <div className="flex-grow"></div>
+                            <div className="flex justify-between items-end">
                                 <span className="font-code font-bold text-xs text-black/80">{item.time.startTime}</span>
                                 <span className="font-code font-bold text-xs text-black/80">{item.time.endTime}</span>
                             </div>
@@ -304,3 +305,5 @@ export const ScheduleView = forwardRef<{
 });
 
 ScheduleView.displayName = 'ScheduleView';
+
+    
