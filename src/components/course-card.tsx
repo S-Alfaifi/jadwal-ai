@@ -66,7 +66,7 @@ export function CourseCard({ course, onEdit, onDelete, onToggleCourse, onToggleS
   
   return (
     <Card className={cn("overflow-hidden transition-all hover:shadow-md", !course.isEnabled && "opacity-50")}>
-      <CardHeader className="flex flex-row items-start bg-muted/50">
+      <CardHeader className="flex flex-row items-start bg-muted/50" dir="ltr">
         <div className="flex-grow min-w-0 pr-4">
           <CardTitle className="flex items-start gap-3">
              <Popover>
@@ -93,9 +93,9 @@ export function CourseCard({ course, onEdit, onDelete, onToggleCourse, onToggleS
                     </div>
                 </PopoverContent>
              </Popover>
-            <span className={`truncate block ${language === 'ar' ? 'font-arabic' : ''}`}>{course.name}</span>
+            <span className={`truncate block ${language === 'ar' ? 'font-arabic text-right' : ''}`}>{course.name}</span>
           </CardTitle>
-           <CardDescription className={`mt-1 flex items-center gap-4 pl-7 ${language === 'ar' ? 'font-arabic' : ''}`}>
+           <CardDescription className={`mt-1 flex items-center gap-4 pl-7 ${language === 'ar' ? 'font-arabic text-right' : ''}`}>
                 <span>{course.sections.length} {t.sectionsCount}</span>
                 {course.finalExamPeriod && (
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
