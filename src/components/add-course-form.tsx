@@ -178,7 +178,7 @@ export function AddCourseForm({ onSubmit, course }: AddCourseFormProps) {
       </div>
 
 
-      <ScrollArea className="h-[400px] pr-4">
+      <ScrollArea className="h-[350px] pr-4">
         <div className="space-y-6">
           {fields.map((field, index) => (
              <div key={field.id} ref={el => sectionRefs.current[index] = el} className="p-4 border rounded-lg space-y-4 relative bg-card">
