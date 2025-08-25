@@ -10,6 +10,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { useLanguage } from "@/context/language-context";
 import { translations } from "@/lib/translations";
 import Image from "next/image";
+import saudiFontLogo from '@/images/saudi-font-logo.png';
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -45,11 +46,12 @@ export default function WelcomePage() {
                  {language === 'ar' && (
                   <div className="mt-6">
                       <Image
-                        src="/images/saudi-font-logo.png"
+                        src={saudiFontLogo}
                         alt="Saudi Font Logo"
                         width={200}
                         height={120}
                         className="rounded-lg"
+                        unoptimized
                       />
                   </div>
                 )}
