@@ -66,11 +66,6 @@ export function ScheduleControls({
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-4 rounded-lg bg-card border" dir="ltr">
       <div>
         <h2 className={`text-2xl font-headline font-bold ${language === 'ar' ? 'font-arabic text-right' : ''}`}>{t.title}</h2>
-        {total > 0 && (
-          <p className={`text-muted-foreground ${language === 'ar' ? 'font-arabic text-right' : ''}`}>
-            {t.displaying} {current} {t.of} {total}
-          </p>
-        )}
       </div>
       <div className="flex items-center gap-4 flex-wrap justify-center">
 
@@ -124,6 +119,11 @@ export function ScheduleControls({
                     <p className={language === 'ar' ? 'font-arabic' : ''}>{t.tooltips.previous}</p>
                 </TooltipContent>
             </Tooltip>
+             {total > 0 && (
+                <p className={`text-sm text-muted-foreground tabular-nums ${language === 'ar' ? 'font-arabic' : ''}`}>
+                    {t.displaying} {current} {t.of} {total}
+                </p>
+            )}
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button variant="outline" size="icon" onClick={onNext} disabled={total <= 1}>

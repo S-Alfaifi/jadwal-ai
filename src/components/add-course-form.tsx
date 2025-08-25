@@ -1,7 +1,7 @@
 
 "use client"
 
-import React from "react";
+import React, { useRef } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -58,6 +58,7 @@ interface AddCourseFormProps {
 export function AddCourseForm({ onSubmit, course }: AddCourseFormProps) {
   const { language } = useLanguage();
   const t = translations[language].addCourseForm;
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const getDayName = (day: Day) => {
     return t.days[day];
@@ -97,6 +98,9 @@ export function AddCourseForm({ onSubmit, course }: AddCourseFormProps) {
       setValue(`sections.${sectionIndex}.lab`, undefined);
     } else {
       setValue(`sections.${sectionIndex}.lab`, { days: [], startTime: "10:00", endTime: "11:00", classroom: "" });
+      setTimeout(() => {
+        sectionRefs.current[sectionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
     }
   }
 
@@ -177,7 +181,7 @@ export function AddCourseForm({ onSubmit, course }: AddCourseFormProps) {
       <ScrollArea className="h-[400px] pr-4">
         <div className="space-y-6">
           {fields.map((field, index) => (
-             <div key={field.id} className="p-4 border rounded-lg space-y-4 relative bg-card">
+             <div key={field.id} ref={el => sectionRefs.current[index] = el} className="p-4 border rounded-lg space-y-4 relative bg-card">
                 <div className="flex justify-between items-start">
                     <div className="flex-grow space-y-2">
                       <Label htmlFor={`sections.${index}.name`} className={language === 'ar' ? 'font-arabic' : ''}>{t.sectionNameLabel}</Label>

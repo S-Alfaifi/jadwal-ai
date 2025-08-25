@@ -1,3 +1,4 @@
+
 import type { Day } from "./types";
 
 const translationData = {
@@ -104,7 +105,7 @@ const translationData = {
         }
     },
     scheduleControls: {
-        title: "Generated Schedule",
+        title: "Generated Schedules",
         displaying: "Displaying alternative",
         of: "of",
         toggles: {
@@ -211,15 +212,15 @@ const translationData = {
         sectionNameLabel: "اسم الشعبة",
         sectionNamePlaceholder: "شعبة 1",
         addSectionButton: "إضافة شعبة",
-        hasLabLabel: "هذه الشعبة لديها معمل",
+        hasLabLabel: "هذه الشعبة لديها عملي",
         classroomLabel: "القاعة الدراسية (اختياري)",
         classroomPlaceholder: "مثال: قاعة 101",
         daysLabel: "الأيام",
         startTimeLabel: "وقت البدء",
         endTimeLabel: "وقت الانتهاء",
         classTypes: {
-            lecture: 'محاضرة',
-            lab: 'معمل',
+            lecture: 'نظري',
+            lab: 'عملي',
         },
         days: {
             Sun: 'الأحد',
@@ -250,12 +251,12 @@ const translationData = {
         enabled: "مفعل",
         disabled: "معطل",
         classTypes: {
-            Lecture: 'محاضرة',
-            Lab: 'معمل',
+            Lecture: 'نظري',
+            Lab: 'عملي',
         }
     },
     scheduleControls: {
-        title: "الجدول المُنشأ",
+        title: "الجداول المنشأة",
         displaying: "عرض البديل",
         of: "من",
         toggles: {
@@ -265,7 +266,7 @@ const translationData = {
         },
         tooltips: {
             classroom: "تبديل عرض أرقام القاعات الدراسية.",
-            classTypes: "تبديل عرض أنواع الحصص (محاضرة/معمل).",
+            classTypes: "تبديل عرض أنواع الحصص (نظري/عملي).",
             sectionNames: "تبديل عرض أسماء الشعب في الجدول.",
             saveImage: "حفظ الجدول كصورة",
             previous: "الجدول السابق",
@@ -277,8 +278,8 @@ const translationData = {
         summary: {
             title: "ملخص المقررات",
             description: "تفاصيل الجدول المعروض حاليًا.",
-            lecture: "محاضرة",
-            lab: "معمل"
+            lecture: "نظري",
+            lab: "عملي"
         }
     },
     toasts: {
