@@ -22,12 +22,12 @@ const ptSans = PT_Sans({
 const saudiFont = localFont({
   src: [
     {
-      path: '../assets/fonts/Saudi-Regular.woff2',
+      path: '../assets/fonts/SaudiWeb-Regular.woff2',
       weight: '400',
       style: 'normal',
     },
     {
-      path: '../assets/fonts/Saudi-Bold.woff2',
+      path: '../assets/fonts/SaudiWeb-Bold.woff2',
       weight: '700',
       style: 'normal',
     },
