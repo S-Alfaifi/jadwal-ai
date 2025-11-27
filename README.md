@@ -1,15 +1,6 @@
 
 # Jadwal.Ai - Smart University Schedule Builder
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/Sulaiman-Alfaifi/Jadwal.ai/main/public/logo.png" alt="Jadwal.Ai Logo" width="120">
-  <h1 align="center">Jadwal.Ai</h1>
-  <p align="center">
-    The smart, intuitive, and modern way to build your conflict-free university schedule.
-    <br />
-    <a href="https://jadwal.ai"><strong>View Live Demo »</strong></a>
-  </p>
-</div>
 
 ---
 
